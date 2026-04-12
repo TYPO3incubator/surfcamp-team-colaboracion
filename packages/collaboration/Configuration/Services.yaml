@@ -1,0 +1,11 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  TYPO3Incubator\Collaboration\:
+    resource: '../Classes/*'
+
+  TYPO3Incubator\Collaboration\Backend\Controller\ModuleController:
+    tags: ['backend.controller']
