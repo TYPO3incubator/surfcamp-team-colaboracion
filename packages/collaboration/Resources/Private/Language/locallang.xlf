@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <xliff version="1.0">
 	<file source-language="en" datatype="plaintext" original="EXT:collaboration/Resources/Private/Language/locallang.xlf" date="2026-04-14T12:13:00Z" product-name="collaboration">
@@ -28,4 +29,16 @@
 			</trans-unit>
 		</body>
 	</file>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:collaboration/Resources/Private/Language/locallang.xlf" date="2026-04-12T17:27:37Z" product-name="collaboration">
+        <header/>
+        <body>
+            <trans-unit id="assigned">
+                <source>Assigned</source>
+            </trans-unit>
+        </body>
+    </file>
+>>>>>>> 68a0be7 (Working on extending notes)
 </xliff>
