@@ -23,7 +23,7 @@ composer.lock
 
 # Custom extensions are user-managed
 /packages/*
-!/packages/.gitkeep
+!/packages/collaboration
 
 # OS files
 .DS_Store

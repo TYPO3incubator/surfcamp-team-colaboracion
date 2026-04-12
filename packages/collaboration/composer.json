@@ -1,0 +1,26 @@
+{
+  "name": "typo3-incubator/collaboration",
+  "type": "typo3-cms-extension",
+  "description": "Deliver options and functionalities for better working together in the TYPO3 Backend",
+  "homepage": "https://typo3.org",
+  "license": ["GPL-2.0-or-later"],
+  "authors": [{
+    "name": "TYPO3 Surfcamp 2026 Team 2 - Colaboracion",
+    "email": "typo3cms@typo3.org",
+    "role": "Developer"
+  }],
+  "require": {
+    "typo3/cms-core": "^14.3",
+    "typo3/cms-backend": "^14.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "TYPO3Incubator\\Collaboration\\": "Classes/"
+    }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "collaboration"
+    }
+  }
+}
