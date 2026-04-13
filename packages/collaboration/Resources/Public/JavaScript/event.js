@@ -4,6 +4,5 @@ source.addEventListener('customEvent', (e) => {
     console.log(e);
 });
 
-source.onerror = () => {
-    // Browser reconnectet automatisch
-};
+source.addEventListener('ping', (e) => console.log(JSON.parse(e.data)));
+source.onerror = (e) => console.error('SSE error', e);

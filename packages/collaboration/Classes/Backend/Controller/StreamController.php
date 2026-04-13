@@ -26,24 +26,39 @@ final readonly class StreamController
 
     public function eventAction(): ResponseInterface
     {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+
+        set_time_limit(0);
+
+        $stream = SSE\Stream\SelfEmittingEventStream::create();
+        $stream->open();
+
         $eventData = [
             'user' => 1,
             'isOpen' => true,
         ];
-        // Open event stream
-        $eventStream = SSE\Stream\SelfEmittingEventStream::create();
-        $eventStream->open();
 
-        $eventStream->sendEvent(new MyCustomEvent('MyCustomEvent', $eventData));
+        while (true) {
+            $stream->sendMessage('ping', time());
+            $stream->sendEvent(new MyCustomEvent('MyCustomEvent', $eventData));
 
-        // Send message
-        $eventStream->sendMessage('myCustomEvent');
+            echo str_repeat(' ', 4096); // force buffer flush
 
-        // Close event stream
-        $eventStream->close();
+            if (connection_aborted()) {
+                break;
+            }
 
-        // return content type has to be "text/event-stream"
-        return $this->responseFactory->createResponse()
-            ->withHeader('Content-Type', 'text/event-stream');
+            sleep(2);
+        }
+
+        $stream->close();
+        exit();
     }
 }
