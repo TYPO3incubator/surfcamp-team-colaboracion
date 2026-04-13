@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TYPO3Incubator\Collaboration\Backend\Controller;
 
 use EliasHaeussler\SSE;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
@@ -16,6 +17,7 @@ final readonly class ModuleController
 {
     public function __construct(
         protected ModuleTemplateFactory $moduleTemplateFactory,
+        private ResponseFactoryInterface $responseFactory,
     ) {}
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
@@ -28,6 +30,10 @@ final readonly class ModuleController
         ServerRequestInterface $request,
         ModuleTemplate $view
     ): ResponseInterface {
+        // return content type has to be "text/event-stream"
+        $response = $this->responseFactory->createResponse()
+            ->withHeader('Content-Type', 'text/event-stream');
+
         // Open event stream
         $eventStream = SSE\Stream\SelfEmittingEventStream::create();
         $eventStream->open();
@@ -37,6 +43,7 @@ final readonly class ModuleController
 
         // Close event stream
         $eventStream->close();
-        return $view->renderResponse('');
+
+        return $response;
     }
 }
