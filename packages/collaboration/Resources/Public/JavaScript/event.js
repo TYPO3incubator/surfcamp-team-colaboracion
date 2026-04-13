@@ -1,4 +1,4 @@
-const source = new EventSource('https://surfcamp-team2.ddev.site/typo3/module/web/example');
+const source = new EventSource(TYPO3.settings.ajaxUrls.collaboration_example);
 
 source.addEventListener('customEvent', (e) => {
     console.log(e);
