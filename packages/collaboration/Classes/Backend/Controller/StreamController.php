@@ -9,6 +9,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
+use TYPO3Incubator\Collaboration\Stream\Event\MyCustomEvent;
 
 #[AsController]
 final readonly class StreamController
@@ -25,11 +26,15 @@ final readonly class StreamController
 
     public function eventAction(): ResponseInterface
     {
+        $eventData = [
+            'user' => 1,
+            'isOpen' => true,
+        ];
         // Open event stream
         $eventStream = SSE\Stream\SelfEmittingEventStream::create();
         $eventStream->open();
 
-        // ToDo: Send event
+        $eventStream->sendEvent(new MyCustomEvent('MyCustomEvent', $eventData));
 
         // Send message
         $eventStream->sendMessage('myCustomEvent');
