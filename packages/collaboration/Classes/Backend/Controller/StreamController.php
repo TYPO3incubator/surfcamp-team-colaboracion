@@ -9,34 +9,27 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
-use TYPO3\CMS\Backend\Template\ModuleTemplate;
-use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 
 #[AsController]
 final readonly class StreamController
 {
     public function __construct(
-        protected ModuleTemplateFactory $moduleTemplateFactory,
         private ResponseFactoryInterface $responseFactory,
     ) {}
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
-        $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        return $this->eventAction($request, $moduleTemplate);
+        // go straight to eventAction
+        return $this->eventAction();
     }
 
-    public function eventAction(
-        ServerRequestInterface $request,
-        ModuleTemplate $view
-    ): ResponseInterface {
-        // return content type has to be "text/event-stream"
-        $response = $this->responseFactory->createResponse()
-            ->withHeader('Content-Type', 'text/event-stream');
-
+    public function eventAction(): ResponseInterface
+    {
         // Open event stream
         $eventStream = SSE\Stream\SelfEmittingEventStream::create();
         $eventStream->open();
+
+        // ToDo: Send event
 
         // Send message
         $eventStream->sendMessage('myCustomEvent');
@@ -44,6 +37,8 @@ final readonly class StreamController
         // Close event stream
         $eventStream->close();
 
-        return $response;
+        // return content type has to be "text/event-stream"
+        return $this->responseFactory->createResponse()
+            ->withHeader('Content-Type', 'text/event-stream');
     }
 }
