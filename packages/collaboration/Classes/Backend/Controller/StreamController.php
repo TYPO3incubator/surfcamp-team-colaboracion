@@ -5,19 +5,16 @@ declare(strict_types=1);
 namespace TYPO3Incubator\Collaboration\Backend\Controller;
 
 use EliasHaeussler\SSE;
-use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
-use TYPO3Incubator\Collaboration\Stream\Event\MyCustomEvent;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3Incubator\Collaboration\Stream\Event\StreamEvent;
 
 #[AsController]
 final readonly class StreamController
 {
-    public function __construct(
-        private ResponseFactoryInterface $responseFactory,
-    ) {}
-
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
         // go straight to eventAction
@@ -40,14 +37,29 @@ final readonly class StreamController
         $stream = SSE\Stream\SelfEmittingEventStream::create();
         $stream->open();
 
-        $eventData = [
-            'user' => 1,
-            'isOpen' => true,
-        ];
-
         while (true) {
             $stream->sendMessage('ping', time());
-            $stream->sendEvent(new MyCustomEvent('MyCustomEvent', $eventData));
+
+            // get all stored messages in db table
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+                ->getQueryBuilderForTable('sys_event_messages');
+            $eventMessages = $queryBuilder
+                ->select('*')
+                ->from('sys_event_messages')
+                ->executeQuery()
+                ->fetchAllAssociative();
+
+            if (!empty($eventMessages)) {
+                // execute message events
+                foreach ($eventMessages as $eventMessage) {
+                    $eventData = json_decode($eventMessage['message'], true);
+                    $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
+                }
+                // clear table afterwards
+                $queryBuilder
+                    ->delete('sys_event_messages')
+                    ->executeStatement();
+            }
 
             echo str_repeat(' ', 4096); // force buffer flush
 
