@@ -1,10 +1,10 @@
 <?php
 
-use TYPO3Incubator\Collaboration\Backend\Controller\ModuleController;
+use TYPO3Incubator\Collaboration\Backend\Controller\StreamController;
 
 return [
     'collaboration_example' => [
         'path' => '/collaboration/sse-example',
-        'target' => ModuleController::class . '::handleRequest',
+        'target' => StreamController::class . '::handleRequest',
     ],
 ];

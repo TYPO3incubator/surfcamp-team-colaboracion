@@ -13,7 +13,7 @@ use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 
 #[AsController]
-final readonly class ModuleController
+final readonly class StreamController
 {
     public function __construct(
         protected ModuleTemplateFactory $moduleTemplateFactory,
