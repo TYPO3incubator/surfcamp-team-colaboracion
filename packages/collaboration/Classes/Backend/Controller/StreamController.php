@@ -8,6 +8,7 @@ use EliasHaeussler\SSE;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
+use TYPO3Incubator\Collaboration\Service\CollaborationEventService;
 use TYPO3Incubator\Collaboration\Service\EventMessageService;
 use TYPO3Incubator\Collaboration\Stream\Event\StreamEvent;
 
@@ -15,7 +16,8 @@ use TYPO3Incubator\Collaboration\Stream\Event\StreamEvent;
 final readonly class StreamController
 {
     public function __construct(
-        private EventMessageService $eventMessageService
+        private EventMessageService $eventMessageService,
+        private CollaborationEventService $collaborationEventService,
     ) {}
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
@@ -54,13 +56,31 @@ final readonly class StreamController
                 $this->eventMessageService->cleanUp();
             }
 
+            $events = $this->collaborationEventService->getAllEvents();
+            if (!empty($events)) {
+                foreach ($events as $event) {
+                    if ($GLOBALS['BE_USER']->user['uid'] === $event['user_id']) break;
+                    $eventData = json_decode($event['payload'], true);
+                    if (time() - $event['timestamp'] < 2) {
+                        $stream->sendEvent(new StreamEvent('stream_'.$event['type'], $eventData));
+                    } else {
+                        $stream->sendEvent(new StreamEvent('stream_blur', $eventData));
+                    }
+
+                    if (time() - $event['timestamp'] > 2) {
+                            $stream->sendEvent(new StreamEvent('stream_blur', $eventData));
+                            $this->collaborationEventService->cleanUp($event['uid']);
+                    }
+                }
+            }
+
             echo str_repeat(' ', 4096); // force buffer flush
 
             if (connection_aborted()) {
                 break;
             }
 
-            sleep(2);
+            usleep(500000);
         }
 
         $stream->close();
