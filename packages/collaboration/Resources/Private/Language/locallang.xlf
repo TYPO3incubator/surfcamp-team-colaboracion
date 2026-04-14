@@ -1,42 +1,48 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<xliff version="1.0">
-	<file source-language="en" datatype="plaintext" original="EXT:collaboration/Resources/Private/Language/locallang.xlf" date="2026-04-14T12:13:00Z" product-name="collaboration">
-		<header/>
-		<body>
-			<trans-unit id="history_button.label" resname="history_button.label">
-				<source>Last edited %s</source>
-			</trans-unit>
-			<trans-unit id="history_button.title" resname="history_button.title">
-				<source>Last edited %s by %s</source>
-			</trans-unit>
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:collaboration/Resources/Private/Language/locallang.xlf">
+        <header/>
+        <body>
+            <trans-unit id="presence.editing.label" resname="presence.editing.label">
+                <source>This element is currently being edited.</source>
+            </trans-unit>
+            <trans-unit id="presence.avatars.aria" resname="presence.avatars.aria">
+                <source>%d users are currently on this page</source>
+            </trans-unit>
+            <trans-unit id="history_button.label" resname="history_button.label">
+                <source>Last edited %s</source>
+            </trans-unit>
+            <trans-unit id="history_button.title" resname="history_button.title">
+                <source>Last edited %s by %s</source>
+            </trans-unit>
 
-			<!--- Server Sent Events -->
-			<trans-unit id="sse.cache_cleared.title" resname="sse.cache_cleared">
-				<source>Cache has cleared.</source>
-			</trans-unit>
-			<trans-unit id="sse.cache_cleared.message" resname="sse.cache_cleared">
-				<source>You might want to reload the Backend.</source>
-			</trans-unit>
-			<trans-unit id="sse.cache_cleared.action_label">
-				<source>Reload Backend</source>
-			</trans-unit>
-			<trans-unit id="sse.parallel_editing.title">
-				<source>User %s started editing this record too.</source>
-			</trans-unit>
-			<trans-unit id="sse.parallel_editing.message">
-				<source>You might overwrite one another changes.</source>
-			</trans-unit>
+            <!--- Server Sent Events -->
+            <trans-unit id="sse.cache_cleared.title" resname="sse.cache_cleared">
+                <source>Cache has cleared.</source>
+            </trans-unit>
+            <trans-unit id="sse.cache_cleared.message" resname="sse.cache_cleared">
+                <source>You might want to reload the Backend.</source>
+            </trans-unit>
+            <trans-unit id="sse.cache_cleared.action_label">
+                <source>Reload Backend</source>
+            </trans-unit>
+            <trans-unit id="sse.parallel_editing.title">
+                <source>User %s started editing this record too.</source>
+            </trans-unit>
+            <trans-unit id="sse.parallel_editing.message">
+                <source>You might overwrite one another changes.</source>
+            </trans-unit>
 
-			<!--- Extend sys_notes -->
-			<trans-unit id="sys_note.assigned_id.label">
-				<source>Assign user</source>
-			</trans-unit>
-			<trans-unit id="sys_note.assigned_id.default">
-				<source>Choose a user</source>
-			</trans-unit>
-			<trans-unit id="sys_note.assigned">
-				<source>Assigned</source>
-			</trans-unit>
-		</body>
-	</file>
+            <!--- Extend sys_notes -->
+            <trans-unit id="sys_note.assigned_id.label">
+                <source>Assign user</source>
+            </trans-unit>
+            <trans-unit id="sys_note.assigned_id.default">
+                <source>Choose a user</source>
+            </trans-unit>
+            <trans-unit id="sys_note.assigned">
+                <source>Assigned</source>
+            </trans-unit>
+        </body>
+    </file>
 </xliff>
