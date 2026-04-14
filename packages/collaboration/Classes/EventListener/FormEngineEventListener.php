@@ -43,6 +43,7 @@ readonly class FormEngineEventListener
                 foreach ($recordLockedBy as $user) {
                     $usersToInform[] = $user->getUserid();
                 }
+                // create a message for the event with the given data
                 $message = new EventMessageDto(
                     $GLOBALS['EXEC_TIME'],
                     $GLOBALS['BE_USER']->user['uid'],

@@ -15,18 +15,38 @@ class EventMessageService
         private readonly ConnectionPool $connectionPool
     ) {}
 
+    // add a message to the db table with given values
     public function addMessage(EventMessageDto $eventMessage): void
     {
-        $queryBuilder = $this->getConnection();
+        $queryBuilder = $this->getQueryBuilder();
         $queryBuilder
             ->insert(self::MESSAGE_TABLE)
             ->values($eventMessage->toArray())
             ->executeStatement();
     }
 
-    // ToDo: Add "removeMessage" function
+    // return an array with all active messages
+    public function getAllMessages(): array
+    {
+        // get all stored messages in db table
+        $queryBuilder = $this->getQueryBuilder();
+        return $queryBuilder
+            ->select('*')
+            ->from('sys_event_messages')
+            ->executeQuery()
+            ->fetchAllAssociative();
+    }
 
-    private function getConnection(): QueryBuilder
+    // truncate table
+    public function cleanUp(): void
+    {
+        $queryBuilder = $this->getQueryBuilder();
+        $queryBuilder
+            ->delete(self::MESSAGE_TABLE)
+            ->executeStatement();
+    }
+
+    private function getQueryBuilder(): QueryBuilder
     {
         return $this->connectionPool->getQueryBuilderForTable(self::MESSAGE_TABLE);
     }
