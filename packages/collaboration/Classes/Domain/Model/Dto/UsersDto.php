@@ -25,7 +25,7 @@ final class UsersDto
         return $this->username;
     }
 
-    public function __toArray(): array
+    public function toArray(): array
     {
         return [
             'userid' => $this->getUserid(),
