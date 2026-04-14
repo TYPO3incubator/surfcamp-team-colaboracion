@@ -57,6 +57,7 @@ final readonly class StreamController
                     }
                     $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
                 }
+                sleep(2);
                 // clear table afterwards
                 $this->eventMessageService->cleanUp();
             }
