@@ -8,13 +8,16 @@ use EliasHaeussler\SSE;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3Incubator\Collaboration\Service\EventMessageService;
 use TYPO3Incubator\Collaboration\Stream\Event\StreamEvent;
 
 #[AsController]
 final readonly class StreamController
 {
+    public function __construct(
+        private EventMessageService $eventMessageService
+    ) {}
+
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
         // go straight to eventAction
@@ -40,15 +43,7 @@ final readonly class StreamController
         while (true) {
             $stream->sendMessage('ping', time());
 
-            // get all stored messages in db table
-            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-                ->getQueryBuilderForTable('sys_event_messages');
-            $eventMessages = $queryBuilder
-                ->select('*')
-                ->from('sys_event_messages')
-                ->executeQuery()
-                ->fetchAllAssociative();
-
+            $eventMessages = $this->eventMessageService->getAllMessages();
             if (!empty($eventMessages)) {
                 // execute message events
                 foreach ($eventMessages as $eventMessage) {
@@ -56,9 +51,7 @@ final readonly class StreamController
                     $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
                 }
                 // clear table afterwards
-                $queryBuilder
-                    ->delete('sys_event_messages')
-                    ->executeStatement();
+                $this->eventMessageService->cleanUp();
             }
 
             echo str_repeat(' ', 4096); // force buffer flush
