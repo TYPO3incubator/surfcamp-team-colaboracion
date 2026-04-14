@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="EXT:collaboration/Resources/Private/Language/locallang.xlf" date="2026-04-14T12:13:00Z" product-name="collaboration">
+		<header/>
+		<body>
+			<trans-unit id="history_button.label" resname="history_button.label">
+				<source>Last edited %s</source>
+			</trans-unit>
+			<trans-unit id="history_button.title" resname="history_button.title">
+				<source>Last edited %s by %s</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
