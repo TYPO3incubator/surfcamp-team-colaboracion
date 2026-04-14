@@ -54,7 +54,7 @@ readonly class ContextualEditEventMiddleware implements MiddlewareInterface
                         $GLOBALS['EXEC_TIME'],
                         $GLOBALS['BE_USER']->user['uid'],
                         $GLOBALS['BE_USER']->getUsername(),
-                        'clearCacheEvent',
+                        'lockedRecordEvent',
                         json_encode(
                             [
                                 'data' => 'User ' . $GLOBALS['BE_USER']->getUsername() . ' started editing this record too. You might overwrite one another changes.'
