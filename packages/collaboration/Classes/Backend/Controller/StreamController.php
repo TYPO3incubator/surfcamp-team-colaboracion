@@ -8,6 +8,7 @@ use EliasHaeussler\SSE;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3Incubator\Collaboration\Service\EventMessageService;
 use TYPO3Incubator\Collaboration\Stream\Event\StreamEvent;
 
@@ -48,8 +49,15 @@ final readonly class StreamController
                 // execute message events
                 foreach ($eventMessages as $eventMessage) {
                     $eventData = json_decode($eventMessage['message'], true);
+                    if ($eventMessage['users_to_inform'] !== '') {
+                        $usersToInform = GeneralUtility::intExplode(',', $eventMessage['users_to_inform']);
+                        if (!in_array($GLOBALS['BE_USER']->user['uid'],$usersToInform)) {
+                            continue;
+                        }
+                    }
                     $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
                 }
+                sleep(2);
                 // clear table afterwards
                 $this->eventMessageService->cleanUp();
             }

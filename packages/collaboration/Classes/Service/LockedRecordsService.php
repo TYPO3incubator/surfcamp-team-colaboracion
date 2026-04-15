@@ -44,6 +44,7 @@ class LockedRecordsService
                     )
                 )
             )
+            ->groupBy('sys_lockedrecords.userid')
             ->executeQuery()
             ->fetchAllAssociative();
 
