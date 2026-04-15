@@ -28,10 +28,5 @@ class PageRendererEventListener
                 '@collaboration/event-stream/input.js',
             ),
         );
-
-        $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
-        $pageRenderer->addCssFile(
-            'EXT:collaboration/Resources/Public/Css/styles.css'
-        );
     }
 }
