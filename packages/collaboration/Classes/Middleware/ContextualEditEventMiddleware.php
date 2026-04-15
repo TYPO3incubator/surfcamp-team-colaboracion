@@ -9,6 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3Incubator\Collaboration\Domain\Model\Dto\EventMessageDto;
 use TYPO3Incubator\Collaboration\Service\EventMessageService;
 use TYPO3Incubator\Collaboration\Service\LockedRecordsService;
@@ -18,6 +19,7 @@ readonly class ContextualEditEventMiddleware implements MiddlewareInterface
     public function __construct(
         private LockedRecordsService $lockedRecordsService,
         private EventMessageService $eventMessageService,
+        private LocalizationUtility $localizationUtility
     ) {}
 
     public function process(
@@ -57,7 +59,15 @@ readonly class ContextualEditEventMiddleware implements MiddlewareInterface
                         'lockedRecordEvent',
                         json_encode(
                             [
-                                'data' => 'User ' . $GLOBALS['BE_USER']->getUsername() . ' started editing this record too. You might overwrite one another changes.'
+                                'title' => $this->localizationUtility->translate(
+                                    'sse.parallel_editing.title',
+                                    'collaboration',
+                                    [$GLOBALS['BE_USER']->getUsername()]
+                                ),
+                                'message' => $this->localizationUtility->translate(
+                                    'sse.parallel_editing.message',
+                                    'collaboration'
+                                ),
                             ],
                             JSON_THROW_ON_ERROR
                         ),
