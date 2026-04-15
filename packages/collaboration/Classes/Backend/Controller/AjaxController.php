@@ -12,45 +12,63 @@ class AjaxController
 {
     public function focusAction(ServerRequestInterface $request): ResponseInterface
     {
-        $data = json_decode($request->getBody()->getContents(), true);
+        $data = json_decode($request->getBody()->getContents(), true) ?? [];
+
+        // Sync ping from client — no DB write needed; stream re-emits state.
+        if (!empty($data['sync'])) {
+            return new JsonResponse(['status' => 'ok']);
+        }
 
         $connection = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getConnectionForTable('sys_collaboration_event');
+
+        $userId = $GLOBALS['BE_USER']->user['uid'];
+
+        // Blur: drop this user's active focus row.
+        if (!empty($data['blur'])) {
+            $connection->delete('sys_collaboration_event', [
+                'user_id' => $userId,
+                'type' => 'focus',
+            ]);
+            return new JsonResponse(['status' => 'ok']);
+        }
 
         $payload = [
             'table' => $data['table'],
             'uid' => $data['uid'],
             'field' => $data['field'],
-            'user_id' => $GLOBALS['BE_USER']->user['uid'],
+            'user_id' => $userId,
         ];
 
-        if (!$data['heartbeat']) {
+        if (empty($data['heartbeat'])) {
+            // New focus → ensure only one focus row per user.
+            $connection->delete('sys_collaboration_event', [
+                'user_id' => $userId,
+                'type' => 'focus',
+            ]);
             $connection->insert('sys_collaboration_event', [
                 'timestamp' => time(),
-                'user_id' => $GLOBALS['BE_USER']->user['uid'],
+                'user_id' => $userId,
                 'page_id' => $payload['uid'],
                 'type' => 'focus',
                 'payload' => $payload,
             ]);
         } else {
-            $connection->update(
+            $affected = $connection->update(
                 'sys_collaboration_event',
-                [
-                    'timestamp' => time(),
-                ],
-                [
-                    'user_id' => $GLOBALS['BE_USER']->user['uid'],
-                    'payload' => json_encode([
-                        'table' => $data['table'],
-                        'uid' => $data['uid'],
-                        'field' => $data['field'],
-                        'user_id' => $GLOBALS['BE_USER']->user['uid'],
-                    ]),
-                ]
+                ['timestamp' => time()],
+                ['user_id' => $userId, 'type' => 'focus']
             );
+            if ($affected === 0) {
+                $connection->insert('sys_collaboration_event', [
+                    'timestamp' => time(),
+                    'user_id' => $userId,
+                    'page_id' => $payload['uid'],
+                    'type' => 'focus',
+                    'payload' => $payload,
+                ]);
+            }
         }
-
-
 
         return new JsonResponse(['status' => 'ok']);
     }

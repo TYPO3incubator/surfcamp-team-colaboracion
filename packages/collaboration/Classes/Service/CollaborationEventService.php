@@ -12,14 +12,15 @@ class CollaborationEventService
 
     public function __construct(
         private readonly ConnectionPool $connectionPool
-    )
-    {}
+    ) {}
 
-    public function getAllEvents(): array {
+    public function getAllEvents(): array
+    {
         $queryBuilder = $this->getQueryBuilder();
         return $queryBuilder
             ->select('*')
             ->from(self::EVENTS_TABLE)
+            ->orderBy('timestamp', 'ASC')
             ->executeQuery()
             ->fetchAllAssociative();
     }

@@ -22,7 +22,6 @@ final readonly class StreamController
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
-        // go straight to eventAction
         return $this->eventAction();
     }
 
@@ -47,34 +46,33 @@ final readonly class StreamController
 
             $eventMessages = $this->eventMessageService->getAllMessages();
             if (!empty($eventMessages)) {
-                // execute message events
                 foreach ($eventMessages as $eventMessage) {
                     $eventData = json_decode($eventMessage['message'], true);
                     $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
                 }
-                // clear table afterwards
                 $this->eventMessageService->cleanUp();
             }
 
             $events = $this->collaborationEventService->getAllEvents();
             if (!empty($events)) {
                 foreach ($events as $event) {
-                    if ($GLOBALS['BE_USER']->user['uid'] === $event['user_id']) break;
+                    if ((int)$GLOBALS['BE_USER']->user['uid'] === (int)$event['user_id']) {
+                        continue;
+                    }
                     $eventData = json_decode($event['payload'], true);
+                    if (!is_array($eventData)) {
+                        continue;
+                    }
                     if (time() - $event['timestamp'] < 2) {
-                        $stream->sendEvent(new StreamEvent('stream_'.$event['type'], $eventData));
+                        $stream->sendEvent(new StreamEvent('stream_' . $event['type'], $eventData));
                     } else {
                         $stream->sendEvent(new StreamEvent('stream_blur', $eventData));
-                    }
-
-                    if (time() - $event['timestamp'] > 2) {
-                            $stream->sendEvent(new StreamEvent('stream_blur', $eventData));
-                            $this->collaborationEventService->cleanUp($event['uid']);
+                        $this->collaborationEventService->cleanUp((int)$event['uid']);
                     }
                 }
             }
 
-            echo str_repeat(' ', 4096); // force buffer flush
+            echo str_repeat(' ', 4096);
 
             if (connection_aborted()) {
                 break;
