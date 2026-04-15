@@ -6,7 +6,7 @@ namespace TYPO3Incubator\Collaboration\Stream\Event;
 
 use EliasHaeussler\SSE\Event\Event;
 
-class MyCustomEvent implements Event
+class StreamEvent implements Event
 {
     private string $eventName;
     private array $eventData;
