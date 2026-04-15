@@ -32,10 +32,10 @@
                             <f:translate key="LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:date" />:
                             <f:format.date>@{note.tstamp}</f:format.date>
                         </span>
-                        <f:if condition="{note.user}">
+                        <f:if condition="{note.assigned_id}">
                             <span class="note-assigned">
                                 <f:translate key="LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.assigned" />:
-                                {note.user}
+                                {note.assigned_name}
                             </span>
                         </f:if>
                         <f:if condition="{note.personal}">

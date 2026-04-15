@@ -16,3 +16,8 @@ CREATE TABLE sys_collaboration_event (
     type VARCHAR(50) NOT NULL,
     payload JSON NOT NULL
 );
+
+# Extend table sys_note
+CREATE TABLE sys_note (
+    assigned_name varchar(255) NOT NULL,
+);

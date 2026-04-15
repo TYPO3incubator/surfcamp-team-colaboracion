@@ -3,15 +3,15 @@ defined('TYPO3') or die();
 
 # add field for assigning note to a be_user, except for cli-user and admin
 $fields = [
-    'user' => [
+    'assigned_id' => [
         'exclude' => 1,
-        'label' => 'LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.user.label',
+        'label' => 'LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.assigned_id.label',
         'config' => [
             'type' => 'select',
             'renderType' => 'selectSingle',
             'items' => [
                 [
-                    'label' => 'LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.user.default',
+                    'label' => 'LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.assigned_id.default',
                     'value' => 0,
                 ]
             ],
@@ -27,7 +27,7 @@ $fields = [
 );
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
     'sys_note',
-    'user',
+    'assigned_id',
     '',
     'after:message'
 );
