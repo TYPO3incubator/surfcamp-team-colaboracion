@@ -8,6 +8,12 @@
             <trans-unit id="presence.avatars.aria" resname="presence.avatars.aria">
                 <source>%d users are currently on this page</source>
             </trans-unit>
+            <trans-unit id="history_button.label" resname="history_button.label">
+                <source>Last edited %s</source>
+            </trans-unit>
+            <trans-unit id="history_button.title" resname="history_button.title">
+                <source>Last edited %s by %s</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>
