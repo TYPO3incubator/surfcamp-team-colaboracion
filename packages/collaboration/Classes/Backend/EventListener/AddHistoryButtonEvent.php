@@ -52,10 +52,9 @@ final readonly class AddHistoryButtonEvent
             $lastEditedDate = date('d.m.y, G:i', $lastRecordChange['tstamp']);
 
             $showHistoryAnchor = $this->componentFactory->createGenericButton()
-                ->setHref($recordHistoryUrl)
                 ->setClasses('btn-borderless')
                 ->setLabel(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.label'), $lastEditedDate))
-                ->setTag('typo3-backend-contextual-record-edit-trigger')
+                ->setTag('typo3-backend-contextual-history-trigger')
                 ->setAttributes(['url' => $recordHistoryUrl])
                 ->setTitle(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.title'), $lastEditedDate, $lastRecordChangeUser->getUserName()))
                 ->setSize(ButtonSize::SMALL)
