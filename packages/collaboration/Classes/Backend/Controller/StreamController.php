@@ -51,7 +51,7 @@ final readonly class StreamController
                     $eventData = json_decode($eventMessage['message'], true);
                     if ($eventMessage['users_to_inform'] !== '') {
                         $usersToInform = GeneralUtility::intExplode(',', $eventMessage['users_to_inform']);
-                        if (!in_array($GLOBALS['BE_USER']->user['uid'],$usersToInform)) {
+                        if (!in_array($GLOBALS['BE_USER']->user['uid'], $usersToInform)) {
                             continue;
                         }
                     }
