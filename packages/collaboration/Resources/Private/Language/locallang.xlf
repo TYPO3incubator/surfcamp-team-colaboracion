@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="EXT:collaboration/Resources/Private/Language/locallang.xlf" date="2026-04-14T12:13:00Z" product-name="collaboration">
+		<header/>
+		<body>
+			<trans-unit id="history_button.label" resname="history_button.label">
+				<source>Last edited %s</source>
+			</trans-unit>
+			<trans-unit id="history_button.title" resname="history_button.title">
+				<source>Last edited %s by %s</source>
+			</trans-unit>
+
+			<!--- Server Sent Events -->
+			<trans-unit id="sse.cache_cleared.title" resname="sse.cache_cleared">
+				<source>Cache has cleared.</source>
+			</trans-unit>
+			<trans-unit id="sse.cache_cleared.message" resname="sse.cache_cleared">
+				<source>You might want to reload the Backend.</source>
+			</trans-unit>
+			<trans-unit id="sse.cache_cleared.action_label">
+				<source>Reload Backend</source>
+			</trans-unit>
+			<trans-unit id="sse.parallel_editing.title">
+				<source>User %s started editing this record too.</source>
+			</trans-unit>
+			<trans-unit id="sse.parallel_editing.message">
+				<source>You might overwrite one another changes.</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
