@@ -5,13 +5,13 @@ defined('TYPO3') or die();
 $fields = [
     'user' => [
         'exclude' => 1,
-        'label' => 'Assign user',
+        'label' => 'LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.user.label',
         'config' => [
             'type' => 'select',
             'renderType' => 'selectSingle',
             'items' => [
                 [
-                    'label' => 'Choose a user',
+                    'label' => 'LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.user.default',
                     'value' => 0,
                 ]
             ],
@@ -27,5 +27,7 @@ $fields = [
 );
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
     'sys_note',
-    'user'
+    'user',
+    '',
+    'after:message'
 );
