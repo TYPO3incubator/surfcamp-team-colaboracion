@@ -40,7 +40,6 @@ final readonly class AddHistoryButtonEvent
 
             $urlParameters = [
                 'element' => $currentTable . ':' . $currentPageId, // TODO | originally the first variable was a "schema"
-                'returnUrl' => $request->getAttribute('normalizedParams')->getRequestUri(),
             ];
             $recordHistoryUrl = (string) $this->uriBuilder->buildUriFromRoute('record_history', $urlParameters);
 
