@@ -7,7 +7,6 @@ namespace TYPO3Incubator\Collaboration\Backend\EventListener;
 use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\Template\Components\Buttons\ButtonSize;
 use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Backend\Template\Components\ModifyButtonBarEvent;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserRepository;
@@ -15,6 +14,7 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3Incubator\Collaboration\Backend\Templates\Components\Buttons\ContextualHistoryButton;
 
 #[AsEventListener(
     identifier: 'collaboration/backend/add-history-button',
@@ -22,11 +22,11 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 final readonly class AddHistoryButtonEvent
 {
     public function __construct(
-        protected readonly ComponentFactory $componentFactory,
-        protected readonly IconFactory $iconFactory,
-        protected readonly UriBuilder $uriBuilder,
-        protected readonly BackendUserRepository $backendUserRepository,
-        protected readonly LanguageServiceFactory $languageServiceFactory,
+        protected ComponentFactory $componentFactory,
+        protected IconFactory $iconFactory,
+        protected UriBuilder $uriBuilder,
+        protected BackendUserRepository $backendUserRepository,
+        protected LanguageServiceFactory $languageServiceFactory,
     ) {}
 
     public function __invoke(ModifyButtonBarEvent $event): void
@@ -50,16 +50,11 @@ final readonly class AddHistoryButtonEvent
             $languageService = $this->languageServiceFactory->createFromUserPreferences($GLOBALS['BE_USER']);
             $lastEditedDate = date('d.m.y, G:i', $lastRecordChange['tstamp']);
 
-            $showHistoryAnchor = $this->componentFactory->createGenericButton()
-                ->setClasses('btn-borderless')
+            $showHistoryAnchor = GeneralUtility::makeInstance(ContextualHistoryButton::class)
                 ->setLabel(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.label'), $lastEditedDate))
-                ->setTag('typo3-backend-contextual-history-trigger')
-                ->setAttributes(['url' => $recordHistoryUrl])
-                ->setTitle(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.title'), $lastEditedDate, $lastRecordChangeUser->getUserName()))
-                ->setSize(ButtonSize::SMALL)
-                ->setShowLabelText(true);
+                ->setUrl($recordHistoryUrl)
+                ->setTitle(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.title'), $lastEditedDate, $lastRecordChangeUser->getUserName()));
 
-            // TODO | Modify "Close"-Button in changelog context panel / Implement new layout with route like "record_edit_contextual"
             // TODO | Respect current workspace?
 
             $buttons[ButtonBar::BUTTON_POSITION_RIGHT][-1][] = clone $showHistoryAnchor;
