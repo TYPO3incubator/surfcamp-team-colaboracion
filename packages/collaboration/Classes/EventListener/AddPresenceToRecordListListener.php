@@ -25,12 +25,13 @@ final class AddPresenceToRecordListListener
             return;
         }
 
-        $mockCounts = [5 => 1, 12 => 2, 18 => 3];
+        $mockCounts = [46 => 1, 50 => 2];
         $count = $mockCounts[$uid] ?? 1;
 
         $badge = sprintf(
-            '<typo3-collaboration-badge count="%d"></typo3-collaboration-badge>',
-            $count
+            '<typo3-collaboration-badge count="%d" record-id="tt_content:%d"></typo3-collaboration-badge>',
+            $count,
+            $uid
         );
 
         $data = $event->getData();
