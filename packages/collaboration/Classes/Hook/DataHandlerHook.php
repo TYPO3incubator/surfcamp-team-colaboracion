@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TYPO3Incubator\Collaboration\Hook;
 
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3Incubator\Collaboration\Domain\Model\Dto\EventMessageDto;
 use TYPO3Incubator\Collaboration\Service\EventMessageService;
 
@@ -12,7 +13,8 @@ use TYPO3Incubator\Collaboration\Service\EventMessageService;
 class DataHandlerHook
 {
     public function __construct(
-        private readonly EventMessageService $eventMessageService
+        private readonly EventMessageService $eventMessageService,
+        private readonly LocalizationUtility $localizationUtility
     ) {}
 
     public function postProcessClearCache(): void
@@ -24,7 +26,18 @@ class DataHandlerHook
             'clearCacheEvent',
             json_encode(
                 [
-                    'data' => 'Cache has cleared. You might want to reload the Backend.'
+                    'title' => $this->localizationUtility->translate(
+                        'sse.cache_cleared.title',
+                        'collaboration'
+                    ),
+                    'message' => $this->localizationUtility->translate(
+                        'sse.cache_cleared.message',
+                    'collaboration'
+                    ),
+                    'actionLabel' => $this->localizationUtility->translate(
+                        'sse.cache_cleared.action_label',
+                        'collaboration'
+                    ),
                 ],
                 JSON_THROW_ON_ERROR
             ),

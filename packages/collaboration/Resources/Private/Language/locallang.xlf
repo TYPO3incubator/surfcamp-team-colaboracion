@@ -9,6 +9,23 @@
 			<trans-unit id="history_button.title" resname="history_button.title">
 				<source>Last edited %s by %s</source>
 			</trans-unit>
+
+			<!--- Server Sent Events -->
+			<trans-unit id="sse.cache_cleared.title" resname="sse.cache_cleared">
+				<source>Cache has cleared.</source>
+			</trans-unit>
+			<trans-unit id="sse.cache_cleared.message" resname="sse.cache_cleared">
+				<source>You might want to reload the Backend.</source>
+			</trans-unit>
+			<trans-unit id="sse.cache_cleared.action_label">
+				<source>Reload Backend</source>
+			</trans-unit>
+			<trans-unit id="sse.parallel_editing.title">
+				<source>User %s started editing this record too.</source>
+			</trans-unit>
+			<trans-unit id="sse.parallel_editing.message">
+				<source>You might overwrite one another changes.</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
