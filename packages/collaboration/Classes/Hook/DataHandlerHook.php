@@ -32,7 +32,7 @@ class DataHandlerHook
                     ),
                     'message' => $this->localizationUtility->translate(
                         'sse.cache_cleared.message',
-                    'collaboration'
+                        'collaboration'
                     ),
                     'actionLabel' => $this->localizationUtility->translate(
                         'sse.cache_cleared.action_label',
