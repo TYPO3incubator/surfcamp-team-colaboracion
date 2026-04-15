@@ -19,22 +19,22 @@ source.addEventListener('open', () => {
 source.addEventListener('stream_focus', (e) => {
     try {
         const data = JSON.parse(e.data).eventData;
+        const key = remoteKey(data);
+        remoteFocuses.set(key, { data, ts: Date.now() });
+        applyHighlight(data, true);
     } catch {
         return
     }
-    const key = remoteKey(data);
-    remoteFocuses.set(key, { data, ts: Date.now() });
-    applyHighlight(data, true);
 });
 
 source.addEventListener('stream_blur', (e) => {
     try {
         const data = JSON.parse(e.data).eventData;
+        remoteFocuses.delete(remoteKey(data));
+        applyHighlight(data, false);
     } catch {
         return
     }
-    remoteFocuses.delete(remoteKey(data));
-    applyHighlight(data, false);
 });
 
 function remoteKey(d) {
