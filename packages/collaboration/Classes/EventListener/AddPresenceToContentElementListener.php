@@ -30,10 +30,11 @@ final class AddPresenceToContentElementListener
 
         $presenceHtml = sprintf(
             '<div class="t3-page-ce-editing-info">'
-            . '<typo3-collaboration-badge count="%d"></typo3-collaboration-badge>'
+            . '<typo3-collaboration-badge count="%d" record-id="tt_content:%d"></typo3-collaboration-badge>'
             . '<span class="collaboration-editing-label">This element is currently being edited.</span>'
             . '</div>',
-            $count
+            $count,
+            $uid
         );
 
         $content = $event->getPreviewContent();

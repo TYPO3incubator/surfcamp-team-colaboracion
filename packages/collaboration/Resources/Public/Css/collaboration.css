@@ -20,6 +20,11 @@
 }
 
 .collaboration-presence-badge__button {
+  /* Reset button defaults */
+  appearance: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -61,6 +66,150 @@
   background-color: #3c7fdd;
 }
 
+/* DocHeader Avatar — Hover Glow */
+.collaboration-presence-badge__button {
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.collaboration-presence-badge:hover .collaboration-presence-badge__button,
+.collaboration-presence-badge:focus-within .collaboration-presence-badge__button {
+  border-color: #3c7fdd;
+  box-shadow: 0 0 0 3px rgba(60, 127, 221, 0.3);
+}
+
+.collaboration-presence-badge:hover,
+.collaboration-presence-badge:focus-within {
+  z-index: 10;
+}
+
+/* DocHeader Avatar — Idle State */
+.collaboration-presence-badge--idle {
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   DocHeader — Presence Popover
+   ========================================================================== */
+
+.collaboration-presence-popover {
+  position-area: block-end span-inline-start;
+  margin-top: 4px;
+  background: var(--typo3-component-bg);
+  border: var(--typo3-component-border-width) solid var(--typo3-component-border-color);
+  border-radius: var(--typo3-component-border-radius);
+  box-shadow: var(--typo3-component-box-shadow);
+  padding: var(--typo3-dropdown-padding-y) var(--typo3-dropdown-padding-x);
+  min-width: 220px;
+  font-size: var(--typo3-component-font-size);
+  line-height: var(--typo3-line-height);
+  color: var(--typo3-component-color);
+}
+
+.collaboration-popover__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--typo3-list-item-padding-y) var(--typo3-list-item-padding-x);
+}
+
+.collaboration-popover__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: var(--typo3-surface-bright, #f7f7f8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.collaboration-popover__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.collaboration-popover__name {
+  font-weight: bold;
+}
+
+.collaboration-popover__detail {
+  font-size: var(--typo3-component-font-size);
+  color: var(--typo3-text-color-variant);
+}
+
+.collaboration-popover__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--typo3-list-item-padding-y) var(--typo3-list-item-padding-x);
+  font-size: var(--typo3-component-font-size);
+  color: var(--typo3-text-color-variant);
+  border-top: 1px solid var(--typo3-component-border-color);
+}
+
+.collaboration-popover__status--active,
+.collaboration-popover__status--idle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.collaboration-popover__status--active {
+  color: #4ade80;
+}
+
+.collaboration-popover__status--idle {
+  color: var(--typo3-text-color-variant);
+}
+
+/* ==========================================================================
+   Minified Badge — Hover Popover
+   ========================================================================== */
+
+.collaboration-badge-hover-popover {
+  position-area: block-end;
+  justify-self: anchor-center;
+  margin-block-start: 4px;
+  position-try-fallbacks: flip-block;
+  background: var(--typo3-component-bg);
+  border: var(--typo3-component-border-width) solid var(--typo3-component-border-color);
+  border-radius: var(--typo3-component-border-radius);
+  box-shadow: var(--typo3-component-box-shadow);
+  padding: var(--typo3-dropdown-padding-y) var(--typo3-dropdown-padding-x);
+  min-width: 160px;
+  white-space: nowrap;
+  font-size: var(--typo3-component-font-size);
+  line-height: var(--typo3-line-height);
+  color: var(--typo3-component-color);
+}
+
+.collaboration-badge-hover-popover__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--typo3-list-item-padding-y) var(--typo3-list-item-padding-x);
+}
+
+.collaboration-badge-hover-popover__user--idle {
+  opacity: 0.5;
+}
+
+.collaboration-badge-hover-popover__name {
+  font-weight: bold;
+}
+
+.collaboration-badge-hover-popover__field {
+  font-size: var(--typo3-component-font-size);
+  color: var(--typo3-text-color-variant);
+}
+
+.collaboration-badge-hover-popover__user + .collaboration-badge-hover-popover__user {
+  border-top: 1px solid var(--typo3-component-border-color);
+}
+
 /* ==========================================================================
    Minified Presence Badge (Records / Content Elements)
    ========================================================================== */
@@ -72,6 +221,7 @@
   justify-content: center;
   width: 24px;
   height: 24px;
+  cursor: default;
   flex-shrink: 0;
   vertical-align: middle;
   margin-right: 8px;
