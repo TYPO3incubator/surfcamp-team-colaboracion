@@ -18,5 +18,11 @@ class PageRendererEventListener
                 '@collaboration/event-stream/event.js',
             ),
         );
+
+        $event->javaScriptRenderer->addJavaScriptModuleInstruction(
+            JavaScriptModuleInstruction::create(
+                '@collaboration/event-stream/input.js',
+            ),
+        );
     }
 }
