@@ -36,7 +36,7 @@ function remoteKey(d) {
 function applyHighlight(data, on) {
     const el = findFieldElement(data);
     if (!el) return;
-    el.style.outline = on ? '3px solid red' : '';
+    el.style.outline = on ? '1px solid #3c7fdd' : '';
     el.style.outlineOffset = '0px';
 }
 
@@ -251,14 +251,14 @@ function parseInputName(name) {
 setInterval(() => {
     const now = Date.now();
     for (const [key, { ts }] of remoteFocuses) {
-        if (now - ts > 2000) {
+        if (now - ts > 500) {
             const { data } = remoteFocuses.get(key);
             remoteFocuses.delete(key);
             applyHighlight(data, false);
         }
     }
     reapplyAllHighlights();
-}, 500);
+}, 250);
 
 window.addEventListener('beforeunload', () => {
     if (activeField) sendBlur(activeField);

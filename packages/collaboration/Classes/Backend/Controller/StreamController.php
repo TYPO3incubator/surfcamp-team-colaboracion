@@ -63,7 +63,7 @@ final readonly class StreamController
                     if (!is_array($eventData)) {
                         continue;
                     }
-                    if (time() - $event['timestamp'] < 2) {
+                    if (time() - $event['timestamp'] < 0.5) {
                         $stream->sendEvent(new StreamEvent('stream_' . $event['type'], $eventData));
                     } else {
                         $stream->sendEvent(new StreamEvent('stream_blur', $eventData));
