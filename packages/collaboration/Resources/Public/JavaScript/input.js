@@ -17,14 +17,22 @@ source.addEventListener('open', () => {
 });
 
 source.addEventListener('stream_focus', (e) => {
-    const data = JSON.parse(e.data).eventData;
+    try {
+        const data = JSON.parse(e.data).eventData;
+    } catch {
+        return
+    }
     const key = remoteKey(data);
     remoteFocuses.set(key, { data, ts: Date.now() });
     applyHighlight(data, true);
 });
 
 source.addEventListener('stream_blur', (e) => {
-    const data = JSON.parse(e.data).eventData;
+    try {
+        const data = JSON.parse(e.data).eventData;
+    } catch {
+        return
+    }
     remoteFocuses.delete(remoteKey(data));
     applyHighlight(data, false);
 });
@@ -107,7 +115,7 @@ function attachIframe(iframe) {
     };
 
     tryAttach();
-    iframe.addEventListener('load', tryAttach);
+    iframe.addEventListener('load', tryAttach, { once: true });
 }
 
 // Deep search: walks all known docs + their nested iframes + open shadow roots.
@@ -228,7 +236,7 @@ function startHeartbeat() {
     heartbeatInterval = setInterval(() => {
         if (!activeField) return;
         sendFocus(activeField, true);
-    }, 250);
+    }, 1000);
 }
 
 function stopHeartbeat() {
@@ -251,14 +259,14 @@ function parseInputName(name) {
 setInterval(() => {
     const now = Date.now();
     for (const [key, { ts }] of remoteFocuses) {
-        if (now - ts > 500) {
+        if (now - ts > 1500) {
             const { data } = remoteFocuses.get(key);
             remoteFocuses.delete(key);
             applyHighlight(data, false);
         }
     }
     reapplyAllHighlights();
-}, 250);
+}, 1000);
 
 window.addEventListener('beforeunload', () => {
     if (activeField) sendBlur(activeField);
