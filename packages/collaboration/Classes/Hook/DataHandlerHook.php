@@ -67,6 +67,11 @@ class DataHandlerHook
             $table === 'sys_note'
             && isset($fieldArray['assigned_id'])
         ) {
+            // if assigned_id is empty, clear the username as well
+            if ($fieldArray['assigned_id'] === '') {
+                $fieldArray['assigned_name'] = '';
+                return;
+            }
             $assignedUser = BackendUtility::getRecord('be_users', (int)$fieldArray['assigned_id']);
             $fieldArray['assigned_name'] = $assignedUser['username'];
         }
