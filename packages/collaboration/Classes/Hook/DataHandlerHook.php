@@ -17,8 +17,16 @@ class DataHandlerHook
         private readonly LocalizationUtility $localizationUtility
     ) {}
 
-    public function postProcessClearCache(): void
+    public function postProcessClearCache(array $params): void
     {
+        // only when all caches where cleared manually
+        if (
+            !isset($params['cacheCmd'])
+            || $params['cacheCmd'] !== 'all'
+        ) {
+            return;
+        }
+
         $message = new EventMessageDto(
             $GLOBALS['EXEC_TIME'],
             $GLOBALS['BE_USER']->user['uid'],
