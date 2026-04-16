@@ -1,0 +1,88 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+        xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+        xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+>
+<f:if condition="{notes}">
+    <h2><f:translate key="LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:internal_note" /></h2>
+    <div class="note-list">
+        <f:for each="{notes}" as="note">
+            <div class="note note-category-{note.category}">
+                <div class="note-header">
+                    <div class="note-header-bar">
+                        <button
+                                type="button"
+                                class="btn btn-link note-icon"
+                                title="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.contextMenu.open')}"
+                                data-contextmenu-trigger="click"
+                                data-contextmenu-table="sys_note"
+                                data-contextmenu-uid="{note.uid}"
+                                aria-label="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.contextMenu.open')}"
+                        >
+                            <core:icon identifier="sysnote-type-{note.category}" />
+                        </button>
+                        <span class="note-author">
+                            <f:translate key="LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:author" />:
+                            <f:if condition="{note.authorDisabled} || {note.authorDeleted} || !{note.authorUsername}">
+                                <f:then>[{f:translate(key: 'LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:author_deleted')}]</f:then>
+                                <f:else if="{note.authorRealName}">{note.authorRealName}</f:else>
+                                <f:else>{note.authorUsername}</f:else>
+                            </f:if>
+                        </span>
+                        <span class="note-date">
+                            <f:translate key="LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:date" />:
+                            <f:format.date>@{note.tstamp}</f:format.date>
+                        </span>
+                        <f:if condition="{note.assigned_id}">
+                            <span class="note-assigned">
+                                <f:translate key="LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:sys_note.assigned" />:
+                                {note.assigned_name}
+                            </span>
+                        </f:if>
+                        <f:if condition="{note.personal}">
+                            <span class="note-badge">
+                                <span class="badge badge-info"><f:translate key="LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:personal" /></span>
+                            </span>
+                        </f:if>
+                        <span class="note-actions">
+                            <span class="btn-group">
+                                <f:if condition="{note.canBeEdited}">
+                                    <be:link.editRecord uid="{note.uid}" table="sys_note" title="{f:translate(key: 'LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:edit_note')}" class="btn btn-default btn-sm" returnUrl="{returnUrl}">
+                                        <core:icon identifier="actions-open" />
+                                        <span class="visually-hidden">{f:translate(key: 'LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:edit_note')}</span>
+                                    </be:link.editRecord>
+                                </f:if>
+                                <f:if condition="{note.canBeDeleted}">
+                                    <typo3-sysnote-delete-button
+                                        class="btn btn-default btn-sm"
+                                        title="{f:translate(key: 'delete', domain:'sys_note.label')}"
+                                        modal-title="{f:translate(key: 'delete', domain:'sys_note.messages')}"
+                                        modal-content="{f:translate(key: 'delete_note', domain:'sys_note.messages')}"
+                                        modal-button-ok="{f:translate(key: 'delete', domain:'core.action')}"
+                                        modal-button-cancel="{f:translate(key: 'cancel', domain:'core.action')}"
+                                        uid="{note.uid}"
+                                        return-url="{returnUrl}"
+                                    >
+                                        <core:icon identifier="actions-edit-delete" />
+                                        <span class="visually-hidden">{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:delete')}</span>
+                                    </typo3-sysnote-delete-button>
+                                </f:if>
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                <div class="note-body">
+                    <h4>
+                        <f:if condition="{note.category}">
+                            <f:translate key="LLL:EXT:sys_note/Resources/Private/Language/locallang.xlf:category.{note.category}" />:
+                        </f:if>
+                        {note.subject}
+                    </h4>
+                    <f:if condition="{note.message}">
+                        <p><f:format.nl2br>{note.message}</f:format.nl2br></p>
+                    </f:if>
+                </div>
+            </div>
+        </f:for>
+    </div>
+</f:if>
+</html>

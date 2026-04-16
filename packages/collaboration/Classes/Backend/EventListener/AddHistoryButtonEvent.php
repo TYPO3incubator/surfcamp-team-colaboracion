@@ -31,12 +31,16 @@ final readonly class AddHistoryButtonEvent
 
     public function __invoke(ModifyButtonBarEvent $event): void
     {
-        if (str_starts_with($event->getRequest()->getAttribute('route')->getPath(), '/module/web/layout')) {
+        $routePath = $event->getRequest()->getAttribute('route')?->getPath() ?? '';
+        if (str_starts_with($routePath, '/module/web/layout') || str_starts_with($routePath, '/module/manage/workspaces')) {
             $buttons = $event->getButtons();
             $request = $event->getRequest();
 
             $currentTable = 'pages';
-            $currentPageId = $request->getAttribute('pageContext')->pageId;
+            $currentPageId = $request->getAttribute('pageContext')?->pageId ?? (int)($request->getQueryParams()['id'] ?? 0);
+            if ($currentPageId === 0) {
+                return;
+            }
 
             $urlParameters = [
                 'element' => $currentTable . ':' . $currentPageId, // TODO | originally the first variable was a "schema"
@@ -44,7 +48,11 @@ final readonly class AddHistoryButtonEvent
             $recordHistoryUrl = (string) $this->uriBuilder->buildUriFromRoute('record_history', $urlParameters);
 
             $recordHistory = GeneralUtility::makeInstance(RecordHistory::class, $currentTable . ':' . $currentPageId);
-            $lastRecordChange = $recordHistory->getChangeLog()[0];
+            $changeLog = $recordHistory->getChangeLog();
+            if (empty($changeLog)) {
+                return;
+            }
+            $lastRecordChange = $changeLog[0];
             $lastRecordChangeUser = $this->backendUserRepository->findByUid($lastRecordChange['userid']);
 
             $languageService = $this->languageServiceFactory->createFromUserPreferences($GLOBALS['BE_USER']);
@@ -53,11 +61,10 @@ final readonly class AddHistoryButtonEvent
             $showHistoryAnchor = GeneralUtility::makeInstance(ContextualHistoryButton::class)
                 ->setLabel(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.label'), $lastEditedDate))
                 ->setUrl($recordHistoryUrl)
-                ->setTitle(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.title'), $lastEditedDate, $lastRecordChangeUser->getUserName()));
-
-            // TODO | Respect current workspace?
+                ->setTitle(sprintf($languageService->sL('LLL:EXT:collaboration/Resources/Private/Language/locallang.xlf:history_button.title'), $lastEditedDate, $lastRecordChangeUser?->getUserName() ?? 'Unknown'));
 
             $buttons[ButtonBar::BUTTON_POSITION_RIGHT][-1][] = clone $showHistoryAnchor;
+            ksort($buttons[ButtonBar::BUTTON_POSITION_RIGHT]);
             $event->setButtons($buttons);
         }
     }

@@ -8,7 +8,6 @@
 composer.lock
 
 # TYPO3 generated config
-/config/sites/
 /config/system/settings.php
 
 # DDEV local overrides (for worktrees / personal settings)
