@@ -44,8 +44,13 @@ function remoteKey(d) {
 function applyHighlight(data, on) {
     const el = findFieldElement(data);
     if (!el) return;
-    el.style.outline = on ? '1px solid #3c7fdd' : '';
-    el.style.outlineOffset = '0px';
+    let target = el;
+    if (el.type === 'hidden' || (el.getBoundingClientRect && (el.getBoundingClientRect().width === 0 || el.getBoundingClientRect().height === 0))) {
+        const wrapper = el.closest?.('.t3js-formengine-field-item, typo3-rte-ckeditor-ckeditor5, typo3-formengine-element-datetime, typo3-formengine-element-text, typo3-formengine-element-color, typo3-formengine-element-link, typo3-formengine-element-password, typo3-formengine-element-folder, typo3-formengine-element-category, typo3-formengine-element-json');
+        if (wrapper) target = wrapper;
+    }
+    target.style.outline = on ? '1px solid #3c7fdd' : '';
+    target.style.outlineOffset = '0px';
 }
 
 function reapplyAllHighlights() {
@@ -163,13 +168,49 @@ function deepQuery(root, selector) {
 }
 
 function fieldFromEvent(e) {
+    const directSelector = 'input, textarea, select, [data-formengine-input-name], [data-formengine-datepicker-real-input-name]';
     const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+
+    // 1) Direct hit: a real input/textarea/select with a parseable data[...] name.
     for (const node of path) {
         if (!(node instanceof Element)) continue;
-        const hit = node.closest?.('input, textarea, select, [data-formengine-input-name]');
-        if (hit) return hit;
+        const hit = node.closest?.(directSelector);
+        if (hit && parsedFromField(hit)) return hit;
     }
-    return e.target?.closest?.('input, textarea, select, [data-formengine-input-name]') || null;
+    const direct = e.target?.closest?.(directSelector);
+    if (direct && parsedFromField(direct)) return direct;
+
+    // 2) Widget fallback: focus landed inside a formengine widget wrapper
+    //    (CKEditor contenteditable, datepicker popup, color picker, etc.) —
+    //    resolve the wrapper's underlying named field.
+    const wrapperSelector = [
+        '.t3js-formengine-field-item',
+        'typo3-rte-ckeditor-ckeditor5',
+        'typo3-formengine-element-datetime',
+        'typo3-formengine-element-text',
+        'typo3-formengine-element-color',
+        'typo3-formengine-element-link',
+        'typo3-formengine-element-password',
+        'typo3-formengine-element-folder',
+        'typo3-formengine-element-category',
+        'typo3-formengine-element-json',
+    ].join(',');
+    const innerSelector =
+        '[data-formengine-input-name],' +
+        '[data-formengine-datepicker-real-input-name],' +
+        'textarea[name^="data["],' +
+        'input[name^="data["],' +
+        'select[name^="data["]';
+
+    const candidates = path.length ? path : [e.target];
+    for (const node of candidates) {
+        if (!(node instanceof Element)) continue;
+        const wrapper = node.closest?.(wrapperSelector);
+        if (!wrapper) continue;
+        const inner = wrapper.querySelector?.(innerSelector);
+        if (inner && parsedFromField(inner)) return inner;
+    }
+    return null;
 }
 
 function onFocusOut(e) {
@@ -202,7 +243,9 @@ function onFocusIn(e) {
 }
 
 function parsedFromField(field) {
-    const name = field.dataset?.formengineInputName || field.name;
+    const name = field.dataset?.formengineInputName
+        || field.dataset?.formengineDatepickerRealInputName
+        || field.name;
     if (!name) return null;
     return parseInputName(name);
 }
