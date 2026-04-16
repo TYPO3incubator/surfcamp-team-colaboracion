@@ -8,6 +8,22 @@ const iframeDocMap = new WeakMap();
 const remoteFocuses = new Map();
 const ckObservedEditables = new WeakSet();
 
+// Shared across fieldFromEvent() (resolves focus events inside widgets) and
+// applyHighlight() (picks a visible target when the underlying field is hidden).
+// Keep this as the single source of truth so both paths stay consistent.
+const WIDGET_WRAPPER_SELECTOR = [
+    '.t3js-formengine-field-item',
+    'typo3-rte-ckeditor-ckeditor5',
+    'typo3-formengine-element-datetime',
+    'typo3-formengine-element-text',
+    'typo3-formengine-element-color',
+    'typo3-formengine-element-link',
+    'typo3-formengine-element-password',
+    'typo3-formengine-element-folder',
+    'typo3-formengine-element-category',
+    'typo3-formengine-element-json',
+].join(',');
+
 const source = new EventSource(TYPO3.settings.ajaxUrls.collaboration_example);
 
 source.addEventListener('open', () => {
@@ -46,16 +62,22 @@ function applyHighlight(data, on) {
     const el = findFieldElement(data);
     if (!el) return;
 
-    // CKEditor: leverage its own focus styling by toggling ck-focused on the
-    // editable. Backend filters out self, so this never collides with local focus.
+    // CKEditor: render the remote indicator with a dedicated class + inline
+    // box-shadow. We deliberately do NOT toggle `ck-focused` here, because:
+    //   (a) our own MutationObserver on .ck-editor__editable would see the
+    //       class change and broadcast a phantom local focus for this user,
+    //       causing a feedback loop;
+    //   (b) if the local user is actually focused in the same editor, removing
+    //       `ck-focused` on remote blur would strip CKEditor's own focus state
+    //       from under them.
     const ckWrapper = el.closest?.('typo3-rte-ckeditor-ckeditor5');
     const ckEditable = ckWrapper?.querySelector?.('.ck-editor__editable');
     if (ckEditable) {
         if (on) {
-            ckEditable.classList.add('ck-focused', 'collab-remote-focus');
+            ckEditable.classList.add('collab-remote-focus');
             ckEditable.style.boxShadow = '0 0 0 2px #3c7fdd';
         } else {
-            ckEditable.classList.remove('ck-focused', 'collab-remote-focus');
+            ckEditable.classList.remove('collab-remote-focus');
             ckEditable.style.boxShadow = '';
         }
         return;
@@ -63,7 +85,7 @@ function applyHighlight(data, on) {
 
     let target = el;
     if (el.type === 'hidden' || (el.getBoundingClientRect && (el.getBoundingClientRect().width === 0 || el.getBoundingClientRect().height === 0))) {
-        const wrapper = el.closest?.('.t3js-formengine-field-item, typo3-formengine-element-datetime, typo3-formengine-element-text, typo3-formengine-element-color, typo3-formengine-element-link, typo3-formengine-element-password, typo3-formengine-element-folder, typo3-formengine-element-category, typo3-formengine-element-json');
+        const wrapper = el.closest?.(WIDGET_WRAPPER_SELECTOR);
         if (wrapper) target = wrapper;
     }
     target.style.outline = on ? '1px solid #3c7fdd' : '';
@@ -255,18 +277,6 @@ function fieldFromEvent(e) {
     // 2) Widget fallback: focus landed inside a formengine widget wrapper
     //    (CKEditor contenteditable, datepicker popup, color picker, etc.) —
     //    resolve the wrapper's underlying named field.
-    const wrapperSelector = [
-        '.t3js-formengine-field-item',
-        'typo3-rte-ckeditor-ckeditor5',
-        'typo3-formengine-element-datetime',
-        'typo3-formengine-element-text',
-        'typo3-formengine-element-color',
-        'typo3-formengine-element-link',
-        'typo3-formengine-element-password',
-        'typo3-formengine-element-folder',
-        'typo3-formengine-element-category',
-        'typo3-formengine-element-json',
-    ].join(',');
     const innerSelector =
         '[data-formengine-input-name],' +
         '[data-formengine-datepicker-real-input-name],' +
@@ -277,7 +287,7 @@ function fieldFromEvent(e) {
     const candidates = path.length ? path : [e.target];
     for (const node of candidates) {
         if (!(node instanceof Element)) continue;
-        const wrapper = node.closest?.(wrapperSelector);
+        const wrapper = node.closest?.(WIDGET_WRAPPER_SELECTOR);
         if (!wrapper) continue;
         const inner = wrapper.querySelector?.(innerSelector);
         if (inner && parsedFromField(inner)) return inner;
