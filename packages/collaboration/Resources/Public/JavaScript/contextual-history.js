@@ -13,7 +13,7 @@ export class ContextualHistoryTriggerElement extends LitElement {
 
     async buttonActivated() {
         const modal = Modal.advanced({
-            type: Types.ajax,
+            type: Types.iframe,
             title: '',
             content: this.url,
             size: Sizes.expand,
