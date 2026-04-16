@@ -32,7 +32,7 @@ class EventMessageService
         $queryBuilder = $this->getQueryBuilder();
         return $queryBuilder
             ->select('*')
-            ->from('sys_event_messages')
+            ->from(self::MESSAGE_TABLE)
             ->executeQuery()
             ->fetchAllAssociative();
     }
