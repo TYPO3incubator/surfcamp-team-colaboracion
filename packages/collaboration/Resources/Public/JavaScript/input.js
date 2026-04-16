@@ -6,6 +6,21 @@ const knownDocs = new Set();
 const knownShadowRoots = new Set();
 const iframeDocMap = new WeakMap();
 const remoteFocuses = new Map();
+const ckObservedEditables = new WeakSet();
+
+
+const WIDGET_WRAPPER_SELECTOR = [
+    '.t3js-formengine-field-item',
+    'typo3-rte-ckeditor-ckeditor5',
+    'typo3-formengine-element-datetime',
+    'typo3-formengine-element-text',
+    'typo3-formengine-element-color',
+    'typo3-formengine-element-link',
+    'typo3-formengine-element-password',
+    'typo3-formengine-element-folder',
+    'typo3-formengine-element-category',
+    'typo3-formengine-element-json',
+].join(',');
 
 const source = new EventSource(TYPO3.settings.ajaxUrls.collaboration_example);
 
@@ -44,8 +59,27 @@ function remoteKey(d) {
 function applyHighlight(data, on) {
     const el = findFieldElement(data);
     if (!el) return;
-    el.style.outline = on ? '1px solid #3c7fdd' : '';
-    el.style.outlineOffset = '0px';
+
+    const ckWrapper = el.closest?.('typo3-rte-ckeditor-ckeditor5');
+    const ckEditable = ckWrapper?.querySelector?.('.ck-editor__editable');
+    if (ckEditable) {
+        if (on) {
+            ckEditable.classList.add('collab-remote-focus');
+            ckEditable.style.boxShadow = '0 0 0 2px #3c7fdd';
+        } else {
+            ckEditable.classList.remove('collab-remote-focus');
+            ckEditable.style.boxShadow = '';
+        }
+        return;
+    }
+
+    let target = el;
+    if (el.type === 'hidden' || (el.getBoundingClientRect && (el.getBoundingClientRect().width === 0 || el.getBoundingClientRect().height === 0))) {
+        const wrapper = el.closest?.(WIDGET_WRAPPER_SELECTOR);
+        if (wrapper) target = wrapper;
+    }
+    target.style.outline = on ? '1px solid #3c7fdd' : '';
+    target.style.outlineOffset = '0px';
 }
 
 function reapplyAllHighlights() {
@@ -82,7 +116,6 @@ function attachShadowRoot(root) {
     deepWalk(root);
 }
 
-// Recursively walk a root: catch all iframes and open shadow roots inside.
 function deepWalk(root) {
     let nodes;
     try {
@@ -97,7 +130,52 @@ function deepWalk(root) {
         if (node.shadowRoot) {
             attachShadowRoot(node.shadowRoot);
         }
+        if (node.classList?.contains('ck-editor__editable')) {
+            attachCkEditable(node);
+        }
     }
+}
+
+function attachCkEditable(editable) {
+    if (!editable || ckObservedEditables.has(editable)) return;
+    ckObservedEditables.add(editable);
+
+    const resolveField = () => {
+        const wrapper = editable.closest?.('typo3-rte-ckeditor-ckeditor5');
+        if (!wrapper) return null;
+        const inner = wrapper.querySelector?.('textarea[name^="data["], input[name^="data["], [data-formengine-input-name]');
+        if (!inner) return null;
+        return parsedFromField(inner);
+    };
+
+    let wasFocused = false;
+
+    const onToggle = () => {
+        const parsed = resolveField();
+        if (!parsed) return;
+        const key = `${parsed.table}-${parsed.uid}-${parsed.field}`;
+        const focused = editable.classList.contains('ck-focused');
+        if (focused && !wasFocused) {
+            wasFocused = true;
+            if (activeField && lastField !== key) sendBlur(activeField);
+            activeField = parsed;
+            lastField = key;
+            sendFocus(parsed, false);
+            startHeartbeat();
+        } else if (!focused && wasFocused) {
+            wasFocused = false;
+            if (lastField === key) {
+                sendBlur(parsed);
+                activeField = null;
+                lastField = null;
+                stopHeartbeat();
+            }
+        }
+    };
+
+    const observer = new MutationObserver(onToggle);
+    observer.observe(editable, { attributes: true, attributeFilter: ['class'] });
+    if (editable.classList.contains('ck-focused')) onToggle();
 }
 
 function attachIframe(iframe) {
@@ -118,7 +196,6 @@ function attachIframe(iframe) {
     iframe.addEventListener('load', tryAttach, { once: true });
 }
 
-// Deep search: walks all known docs + their nested iframes + open shadow roots.
 function findFieldElement({ table, uid, field }) {
     const inputName = `data[${table}][${uid}][${field}]`;
     const selector = `[data-formengine-input-name="${inputName}"],[name="${inputName}"]`;
@@ -163,13 +240,33 @@ function deepQuery(root, selector) {
 }
 
 function fieldFromEvent(e) {
+    const directSelector = 'input, textarea, select, [data-formengine-input-name], [data-formengine-datepicker-real-input-name]';
     const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+
     for (const node of path) {
         if (!(node instanceof Element)) continue;
-        const hit = node.closest?.('input, textarea, select, [data-formengine-input-name]');
-        if (hit) return hit;
+        const hit = node.closest?.(directSelector);
+        if (hit && parsedFromField(hit)) return hit;
     }
-    return e.target?.closest?.('input, textarea, select, [data-formengine-input-name]') || null;
+    const direct = e.target?.closest?.(directSelector);
+    if (direct && parsedFromField(direct)) return direct;
+
+    const innerSelector =
+        '[data-formengine-input-name],' +
+        '[data-formengine-datepicker-real-input-name],' +
+        'textarea[name^="data["],' +
+        'input[name^="data["],' +
+        'select[name^="data["]';
+
+    const candidates = path.length ? path : [e.target];
+    for (const node of candidates) {
+        if (!(node instanceof Element)) continue;
+        const wrapper = node.closest?.(WIDGET_WRAPPER_SELECTOR);
+        if (!wrapper) continue;
+        const inner = wrapper.querySelector?.(innerSelector);
+        if (inner && parsedFromField(inner)) return inner;
+    }
+    return null;
 }
 
 function onFocusOut(e) {
@@ -202,7 +299,9 @@ function onFocusIn(e) {
 }
 
 function parsedFromField(field) {
-    const name = field.dataset?.formengineInputName || field.name;
+    const name = field.dataset?.formengineInputName
+        || field.dataset?.formengineDatepickerRealInputName
+        || field.name;
     if (!name) return null;
     return parseInputName(name);
 }
@@ -293,8 +392,6 @@ const observer = new MutationObserver((mutations) => {
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// Periodic re-walk of all known docs to catch nested iframes / shadow roots
-// that appear when sidebar↔fullscreen toggles re-mount the editor.
 setInterval(() => {
     for (const doc of knownDocs) {
         try {
