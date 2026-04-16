@@ -8,9 +8,7 @@ const iframeDocMap = new WeakMap();
 const remoteFocuses = new Map();
 const ckObservedEditables = new WeakSet();
 
-// Shared across fieldFromEvent() (resolves focus events inside widgets) and
-// applyHighlight() (picks a visible target when the underlying field is hidden).
-// Keep this as the single source of truth so both paths stay consistent.
+
 const WIDGET_WRAPPER_SELECTOR = [
     '.t3js-formengine-field-item',
     'typo3-rte-ckeditor-ckeditor5',
@@ -62,14 +60,6 @@ function applyHighlight(data, on) {
     const el = findFieldElement(data);
     if (!el) return;
 
-    // CKEditor: render the remote indicator with a dedicated class + inline
-    // box-shadow. We deliberately do NOT toggle `ck-focused` here, because:
-    //   (a) our own MutationObserver on .ck-editor__editable would see the
-    //       class change and broadcast a phantom local focus for this user,
-    //       causing a feedback loop;
-    //   (b) if the local user is actually focused in the same editor, removing
-    //       `ck-focused` on remote blur would strip CKEditor's own focus state
-    //       from under them.
     const ckWrapper = el.closest?.('typo3-rte-ckeditor-ckeditor5');
     const ckEditable = ckWrapper?.querySelector?.('.ck-editor__editable');
     if (ckEditable) {
@@ -126,7 +116,6 @@ function attachShadowRoot(root) {
     deepWalk(root);
 }
 
-// Recursively walk a root: catch all iframes and open shadow roots inside.
 function deepWalk(root) {
     let nodes;
     try {
@@ -147,10 +136,6 @@ function deepWalk(root) {
     }
 }
 
-// CKEditor manages its own focus state via the `ck-focused` class on
-// .ck-editor__editable. DOM focusin/focusout on contenteditables is unreliable
-// when CKEditor intercepts pointer events — so we observe class changes and
-// drive focus/blur from that.
 function attachCkEditable(editable) {
     if (!editable || ckObservedEditables.has(editable)) return;
     ckObservedEditables.add(editable);
@@ -163,9 +148,6 @@ function attachCkEditable(editable) {
         return parsedFromField(inner);
     };
 
-    // Per-editable state so we always know if *we* sent focus for this editor,
-    // independent of the global `lastField` (which another field may have claimed
-    // by the time `ck-focused` is removed).
     let wasFocused = false;
 
     const onToggle = () => {
@@ -182,9 +164,6 @@ function attachCkEditable(editable) {
             startHeartbeat();
         } else if (!focused && wasFocused) {
             wasFocused = false;
-            // Only clear the global focus/blur the backend row if nothing else
-            // has claimed ownership in the meantime — otherwise the new focus
-            // holder (e.g. the header input) would be wiped by our blur.
             if (lastField === key) {
                 sendBlur(parsed);
                 activeField = null;
@@ -217,7 +196,6 @@ function attachIframe(iframe) {
     iframe.addEventListener('load', tryAttach, { once: true });
 }
 
-// Deep search: walks all known docs + their nested iframes + open shadow roots.
 function findFieldElement({ table, uid, field }) {
     const inputName = `data[${table}][${uid}][${field}]`;
     const selector = `[data-formengine-input-name="${inputName}"],[name="${inputName}"]`;
@@ -265,7 +243,6 @@ function fieldFromEvent(e) {
     const directSelector = 'input, textarea, select, [data-formengine-input-name], [data-formengine-datepicker-real-input-name]';
     const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
 
-    // 1) Direct hit: a real input/textarea/select with a parseable data[...] name.
     for (const node of path) {
         if (!(node instanceof Element)) continue;
         const hit = node.closest?.(directSelector);
@@ -274,9 +251,6 @@ function fieldFromEvent(e) {
     const direct = e.target?.closest?.(directSelector);
     if (direct && parsedFromField(direct)) return direct;
 
-    // 2) Widget fallback: focus landed inside a formengine widget wrapper
-    //    (CKEditor contenteditable, datepicker popup, color picker, etc.) —
-    //    resolve the wrapper's underlying named field.
     const innerSelector =
         '[data-formengine-input-name],' +
         '[data-formengine-datepicker-real-input-name],' +
@@ -418,8 +392,6 @@ const observer = new MutationObserver((mutations) => {
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// Periodic re-walk of all known docs to catch nested iframes / shadow roots
-// that appear when sidebar↔fullscreen toggles re-mount the editor.
 setInterval(() => {
     for (const doc of knownDocs) {
         try {
