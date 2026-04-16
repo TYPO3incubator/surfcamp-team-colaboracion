@@ -6,6 +6,7 @@ const knownDocs = new Set();
 const knownShadowRoots = new Set();
 const iframeDocMap = new WeakMap();
 const remoteFocuses = new Map();
+const ckObservedEditables = new WeakSet();
 
 const source = new EventSource(TYPO3.settings.ajaxUrls.collaboration_example);
 
@@ -44,9 +45,25 @@ function remoteKey(d) {
 function applyHighlight(data, on) {
     const el = findFieldElement(data);
     if (!el) return;
+
+    // CKEditor: leverage its own focus styling by toggling ck-focused on the
+    // editable. Backend filters out self, so this never collides with local focus.
+    const ckWrapper = el.closest?.('typo3-rte-ckeditor-ckeditor5');
+    const ckEditable = ckWrapper?.querySelector?.('.ck-editor__editable');
+    if (ckEditable) {
+        if (on) {
+            ckEditable.classList.add('ck-focused', 'collab-remote-focus');
+            ckEditable.style.boxShadow = '0 0 0 2px #3c7fdd';
+        } else {
+            ckEditable.classList.remove('ck-focused', 'collab-remote-focus');
+            ckEditable.style.boxShadow = '';
+        }
+        return;
+    }
+
     let target = el;
     if (el.type === 'hidden' || (el.getBoundingClientRect && (el.getBoundingClientRect().width === 0 || el.getBoundingClientRect().height === 0))) {
-        const wrapper = el.closest?.('.t3js-formengine-field-item, typo3-rte-ckeditor-ckeditor5, typo3-formengine-element-datetime, typo3-formengine-element-text, typo3-formengine-element-color, typo3-formengine-element-link, typo3-formengine-element-password, typo3-formengine-element-folder, typo3-formengine-element-category, typo3-formengine-element-json');
+        const wrapper = el.closest?.('.t3js-formengine-field-item, typo3-formengine-element-datetime, typo3-formengine-element-text, typo3-formengine-element-color, typo3-formengine-element-link, typo3-formengine-element-password, typo3-formengine-element-folder, typo3-formengine-element-category, typo3-formengine-element-json');
         if (wrapper) target = wrapper;
     }
     target.style.outline = on ? '1px solid #3c7fdd' : '';
@@ -102,7 +119,62 @@ function deepWalk(root) {
         if (node.shadowRoot) {
             attachShadowRoot(node.shadowRoot);
         }
+        if (node.classList?.contains('ck-editor__editable')) {
+            attachCkEditable(node);
+        }
     }
+}
+
+// CKEditor manages its own focus state via the `ck-focused` class on
+// .ck-editor__editable. DOM focusin/focusout on contenteditables is unreliable
+// when CKEditor intercepts pointer events — so we observe class changes and
+// drive focus/blur from that.
+function attachCkEditable(editable) {
+    if (!editable || ckObservedEditables.has(editable)) return;
+    ckObservedEditables.add(editable);
+
+    const resolveField = () => {
+        const wrapper = editable.closest?.('typo3-rte-ckeditor-ckeditor5');
+        if (!wrapper) return null;
+        const inner = wrapper.querySelector?.('textarea[name^="data["], input[name^="data["], [data-formengine-input-name]');
+        if (!inner) return null;
+        return parsedFromField(inner);
+    };
+
+    // Per-editable state so we always know if *we* sent focus for this editor,
+    // independent of the global `lastField` (which another field may have claimed
+    // by the time `ck-focused` is removed).
+    let wasFocused = false;
+
+    const onToggle = () => {
+        const parsed = resolveField();
+        if (!parsed) return;
+        const key = `${parsed.table}-${parsed.uid}-${parsed.field}`;
+        const focused = editable.classList.contains('ck-focused');
+        if (focused && !wasFocused) {
+            wasFocused = true;
+            if (activeField && lastField !== key) sendBlur(activeField);
+            activeField = parsed;
+            lastField = key;
+            sendFocus(parsed, false);
+            startHeartbeat();
+        } else if (!focused && wasFocused) {
+            wasFocused = false;
+            // Only clear the global focus/blur the backend row if nothing else
+            // has claimed ownership in the meantime — otherwise the new focus
+            // holder (e.g. the header input) would be wiped by our blur.
+            if (lastField === key) {
+                sendBlur(parsed);
+                activeField = null;
+                lastField = null;
+                stopHeartbeat();
+            }
+        }
+    };
+
+    const observer = new MutationObserver(onToggle);
+    observer.observe(editable, { attributes: true, attributeFilter: ['class'] });
+    if (editable.classList.contains('ck-focused')) onToggle();
 }
 
 function attachIframe(iframe) {
