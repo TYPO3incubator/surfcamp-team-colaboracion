@@ -26,6 +26,17 @@
 			<trans-unit id="sse.parallel_editing.message">
 				<source>You might overwrite one another changes.</source>
 			</trans-unit>
+
+			<!--- Extend sys_notes -->
+			<trans-unit id="sys_note.assigned_id.label">
+				<source>Assign user</source>
+			</trans-unit>
+			<trans-unit id="sys_note.assigned_id.default">
+				<source>Choose a user</source>
+			</trans-unit>
+			<trans-unit id="sys_note.assigned">
+				<source>Assigned</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
