@@ -1,21 +1,9 @@
-Updating
---------
-If you update EXT:news to a newer version, please read this section carefully!
+Update
+======
 
-Versioning
-^^^^^^^^^^
-EXT:news follows the `semantic versioning <https://semver.org/>`__ approach.
+When updating `EXT:collaboration` to a newer version, please follow these steps:
 
-It uses a 3-number versioning scheme: *<major>.<minor>.<patch>*
-
-- Major: Breaking changes
-- Minor: New functionality, backwards compatible (without breaking changes)
-- Patch: Bug fixes (without breaking changes)
-
-Before an update
-^^^^^^^^^^^^^^^^
-
-Before you start the update procedure, please read the changelog of all versions which have been
-released in the meantime! You can find those in the manual :ref:`here <changelog>`.
-
-Furthermore it is **always** a good idea to do updates on a dedicated test installation or at least create a database backup.
+1.  **Update via Composer**: Run `composer update typo3-incubator/collaboration`.
+2.  **Clear Caches**: Clear the TYPO3 system caches in the install tool or via CLI.
+3.  **Check Release Notes**: Review the release notes for any specific update instructions or breaking changes.
+4.  **Database Updates**: If the extension includes new database fields or changes (e.g., to `sys_note`), run the database compare tool in the Maintenance module.

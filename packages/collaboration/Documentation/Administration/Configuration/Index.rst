@@ -4,46 +4,15 @@
 Configuration
 =============
 
+The Collaboration extension is primarily configured via Site Sets.
+
 Site Sets
 =========
 
-..  versionadded:: TYPO3 v13.4.15 / news v13.0
-    If you are working with TYPO3 v12.4, use :ref:`configuration-typoscript-record`.
+This extension provides a Site Set that enables all backend collaboration features.
 
-Using Site Sets is the new way how to configure your site and extensions.
-Read more about it in the TYPO3 documentation at :ref:`Site sets <t3coreapi/13:site-sets>`.
+1.  Go to **Site Management > Sites**.
+2.  Select your site and go to the **Sets** tab.
+3.  Include the **Collaboration** set.
 
-Follow :ref:`configuration-site-set` how to use EXT:news in combination with Site Sets.
-
-.. _configuration-typoscript-record:
-
-TypoScript Records
-==================
-
-The extension ships some TypoScript code which needs to be included.
-
-#. Switch to the root page of your site.
-
-#. Switch to :guilabel:`Template > Info/Modify`.
-
-#. Press the link :guilabel:`Edit the whole template record` and switch to the
-   tab :guilabel:`Includes`.
-
-#. Select :guilabel:`News (news)` at the field :guilabel:`Include static (from extensions):`
-
-   .. include:: /Images/AutomaticScreenshots/NewsIncludeTypoScript.rst.txt
-
-#. Include the static template of `EXT:fluid_styled_content` or provide the
-   following TypoScript yourself:
-
-   .. code-block:: typoscript
-
-      plugin.tx_news.settings.detail.media.image.lightbox {
-         enabled = 0
-         class = lightbox
-         width = 800m
-         height = 600m
-      }
-
-#. **Optional:** If your templates are based on Twitter Bootstrap, add the TWB
-   styles as well to get optimized templates.
+The Site Set includes necessary TSconfig and middleware configurations to enable the contextual history button and real-time notifications.

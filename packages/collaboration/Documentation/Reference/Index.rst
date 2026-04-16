@@ -10,4 +10,5 @@ In-depth reference for integrators and developers.
    :titlesonly:
    :glob:
 
+   TechnicalDetails/Index
    SiteSets/Index

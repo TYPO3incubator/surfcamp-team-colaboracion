@@ -3,62 +3,19 @@
 Installation
 ============
 
-The extension needs to be installed as any other extension of TYPO3 CMS. Get the
-extension by one of the following methods:
+The extension needs to be installed via composer:
 
-#. **Use composer**: Run
+.. code-block:: bash
 
-   .. code-block:: bash
+   composer require typo3-incubator/collaboration
 
-      composer require georgringer/news
+Site Set Activation
+-------------------
 
-   in your TYPO3 installation.
+After installation, you must activate the Site Set provided by this extension:
 
-#. **Get it from the Extension Manager:** Switch to the module :guilabel:`Admin Tools > Extensions`.
-   Switch to :guilabel:`Get Extensions` and search for the extension key
-   *news* and import the extension from the repository.
-
-#. **Get it from typo3.org:** You can always get current version from `TER`_
-   by downloading the zip version. Upload the file afterwards in the Extension
-   Manager.
-
-and :ref:`configure <extensionConfiguration>` it.
-
-.. _TER: https://extensions.typo3.org/extension/news/
-
-Compatibility
--------------
-
-Ensure the compatibility of the extension with your TYPO3 installation by
-considering this compatibility matrix:
-
-=========== =========== =========== ======================================
-  News       TYPO3       PHP         Support / Development
-=========== =========== =========== ======================================
-  14         13 - 14     8.2 - 8.5   active support
-  13         12 - 13     8.1 - 8.4   none
-  12         12 - 13     8.1 - 8.4   none
-  11         11 - 12     7.4 - 8.3   none
-  10         10 - 11     7.4 - 8.1   none
-  9          10 - 11     7.4 - 8.1   none
-  8          9.5 - 10    7.2 - 7.4   none
-  7.x        8.7 - 9.x   7.0 - 7.2   none
-  6.x        7.6 - 8.7   5.6 - 7.2   none
-  5.x        7.6 - 8.7   5.6 - 7.2   none
-  4.x        7.6         5.5 - 5.6   none
-  3.x        6.2         5.5 - 5.6   none
-=========== =========== =========== ======================================
-
-Versioning
-----------
-
-This project uses `semantic versioning <https://semver.org/>`_, which means that
-
-*  **bugfix updates** (e.g. 1.0.0 => 1.0.1) just include small bugfixes or
-   security relevant stuff without breaking changes,
-*  **minor updates** (e.g. 1.0.0 => 1.1.0) include new features and smaller
-   tasks without breaking changes and
-*  **major updates** (e.g. 1.0.0 => 2.0.0) contain breaking changes which can be
-   refactorings, features or bugfixes.
-
-as can be seen by reading the project's :ref:`change log <changelog>`.
+1.  Navigate to **Site Management > Sites**.
+2.  Edit your site configuration.
+3.  Go to the **Sets** tab.
+4.  Add **Collaboration** to the active sets.
+5.  Save the configuration.
