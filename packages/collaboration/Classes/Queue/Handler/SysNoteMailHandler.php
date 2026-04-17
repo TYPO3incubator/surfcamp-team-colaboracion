@@ -21,10 +21,9 @@ class SysNoteMailHandler
     {
         $mail = GeneralUtility::makeInstance(MailMessage::class);
         $mail->to($message->getEmail())
-            ->from(MailUtility::getSystemFromAddress())
-            ->subject('Thank you for your order')
-            ->html("<h1>Thank you for your order</h1>
-                <p>You ordered {$message->getAmount()} things!</p>");
+            ->from('team2@surfcamp.de')
+            ->subject('A Backend Note was assigned to you')
+            ->html('test');
         $this->mailer->send($mail);
     }
 }

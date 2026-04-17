@@ -14,6 +14,8 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['clea
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass'][] =
     DataHandlerHook::class;
 
+// Unset the default, so that it no longer applies
+unset($GLOBALS['TYPO3_CONF_VARS']['SYS']['messenger']['routing']['*']);
 // MessageBus Routing
 foreach ([WebhookMessageInterface::class, SysNoteMailMessage::class] as $className) {
     $GLOBALS['TYPO3_CONF_VARS']['SYS']['messenger']['routing'][$className] = 'doctrine';
