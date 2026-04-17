@@ -75,11 +75,25 @@ class DataHandlerHook
                 $fieldArray['assigned_name'] = '';
                 return;
             }
+
             $assignedUser = BackendUtility::getRecord('be_users', (int)$fieldArray['assigned_id']);
             $fieldArray['assigned_name'] = $assignedUser['username'];
             // check if user has email set, if so dispatch a SysNoteMailMesage with this given mail
             if ($assignedUser['email'] !== '') {
-                $this->messageBus->dispatch(new SysNoteMailMessage($assignedUser['email']));
+                // get pid and message from sys_note record
+                $pid = $fieldArray['pid'] ?? 0;
+                $message = $fieldArray['subject'] ?? '';
+                if ($status !== 'new') {
+                    $sysNote = BackendUtility::getRecord('sys_note', (int)$id);
+                    $pid = $sysNote['pid'];
+                    $message = $fieldArray['subject'] ?? $sysNote['subject'];
+                }
+                // dispatch message for the message bus
+                $this->messageBus->dispatch(new SysNoteMailMessage(
+                    $assignedUser['email'],
+                    $pid,
+                    $message,
+                ));
             }
         }
     }

@@ -37,6 +37,12 @@
 			<trans-unit id="sys_note.assigned">
 				<source>Assigned</source>
 			</trans-unit>
+			<trans-unit id="sys_note.mail.subject">
+				<source>A Backend Note was assigned to you</source>
+			</trans-unit>
+			<trans-unit id="sys_note.mail.message">
+				<source>Backend Note with title "%s" was assigned to you. Log into the TYPO3 backend and find the note under the following link:</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
