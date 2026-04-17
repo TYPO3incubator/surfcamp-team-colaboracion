@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace TYPO3Incubator\Collaboration\Hook;
 
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Symfony\Component\Messenger\MessageBusInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3Incubator\Collaboration\Domain\Model\Dto\EventMessageDto;
+use TYPO3Incubator\Collaboration\Queue\Message\SysNoteMailMessage;
 use TYPO3Incubator\Collaboration\Service\EventMessageService;
 
 #[Autoconfigure(public: true)]
@@ -16,7 +18,8 @@ class DataHandlerHook
 {
     public function __construct(
         private readonly EventMessageService $eventMessageService,
-        private readonly LocalizationUtility $localizationUtility
+        private readonly LocalizationUtility $localizationUtility,
+        private readonly MessageBusInterface $messageBus,
     ) {}
 
     public function postProcessClearCache(array $params): void
@@ -72,8 +75,26 @@ class DataHandlerHook
                 $fieldArray['assigned_name'] = '';
                 return;
             }
+
             $assignedUser = BackendUtility::getRecord('be_users', (int)$fieldArray['assigned_id']);
             $fieldArray['assigned_name'] = $assignedUser['username'];
+            // check if user has email set, if so dispatch a SysNoteMailMesage with this given mail
+            if ($assignedUser['email'] !== '') {
+                // get pid and message from sys_note record
+                $pid = $fieldArray['pid'] ?? 0;
+                $message = $fieldArray['subject'] ?? '';
+                if ($status !== 'new') {
+                    $sysNote = BackendUtility::getRecord('sys_note', (int)$id);
+                    $pid = $sysNote['pid'];
+                    $message = $fieldArray['subject'] ?? $sysNote['subject'];
+                }
+                // dispatch message for the message bus
+                $this->messageBus->dispatch(new SysNoteMailMessage(
+                    $assignedUser['email'],
+                    $pid,
+                    $message,
+                ));
+            }
         }
     }
 }
