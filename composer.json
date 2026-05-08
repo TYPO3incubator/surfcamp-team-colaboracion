@@ -53,8 +53,7 @@
     "typo3/cms-workspaces": "@dev",
     "typo3/theme-camino": "@dev",
     "typo3-incubator/collaboration": "dev-main",
-    "eliashaeussler/sse": "^2.0",
-    "ochorocho/lit-demo": "@dev"
+    "eliashaeussler/sse": "^2.0"
   },
   "config": {
     "allow-plugins": {
