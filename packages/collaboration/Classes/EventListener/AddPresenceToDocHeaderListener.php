@@ -47,7 +47,12 @@ final readonly class AddPresenceToDocHeaderListener
                     'recordUid' => null,
                 ];
             }
-        } elseif ($routePath === '/record/edit' || str_ends_with($routePath, '/record/edit')) {
+        } elseif (
+            $routePath === '/record/edit'
+            || str_ends_with($routePath, '/record/edit')
+            || $routePath === '/record/edit/contextual'
+            || str_ends_with($routePath, '/record/edit/contextual')
+        ) {
             $context = $this->resolveEditContext($queryParams);
         }
 
@@ -100,9 +105,14 @@ final readonly class AddPresenceToDocHeaderListener
                 if ($pageId === 0) {
                     continue;
                 }
+                // Contextual edit URLs carry the host module as `?module=web_layout` etc.
+                // Prefer that label so a user editing CE 38 from the layout module shows
+                // up as "Layout-Modul · CE 38" instead of the generic "Edit".
+                $moduleHint = (string)($queryParams['module'] ?? '');
+                $module = self::PAGE_MODULES[$moduleHint] ?? 'edit';
                 return [
                     'pageId' => $pageId,
-                    'module' => 'edit',
+                    'module' => $module,
                     'recordTable' => (string)$table,
                     'recordUid' => $first,
                 ];
