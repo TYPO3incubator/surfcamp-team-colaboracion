@@ -13,12 +13,9 @@ class PageRendererEventListener
 {
     public function __invoke(BeforeBackendPageRenderEvent $event): void
     {
-        $event->javaScriptRenderer->addJavaScriptModuleInstruction(
-            JavaScriptModuleInstruction::create(
-                '@collaboration/event-stream/event.js',
-            ),
-        );
-
+        // event.js is now loaded in the module frame by AddPresenceToDocHeaderListener
+        // so that SSE has correct window.location context for presence features.
+        // input.js (field tracking) stays in the outer backend frame.
         $event->javaScriptRenderer->addJavaScriptModuleInstruction(
             JavaScriptModuleInstruction::create(
                 '@collaboration/event-stream/input.js',

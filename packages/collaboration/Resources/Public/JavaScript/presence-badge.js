@@ -1,41 +1,50 @@
 import { html, LitElement, nothing } from 'lit';
-import { mockPresenceData } from '@typo3/collaboration/mock-data.js';
 
 class PresenceBadge extends LitElement {
   static properties = {
     count: { type: Number },
-    avatarUrl: { type: String, attribute: 'avatar-url' },
     recordId: { type: String, attribute: 'record-id' },
+    _users: { type: Array, state: true },
   };
 
   constructor() {
     super();
     this.count = 0;
-    this.avatarUrl = '';
     this.recordId = '';
+    this._users = [];
     this._showTimeout = null;
+    this._bound = this._onPresenceUpdate.bind(this);
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this._users = this._resolveUsers();
+    document.addEventListener('collaboration:presence-update', this._bound);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     clearTimeout(this._showTimeout);
+    document.removeEventListener('collaboration:presence-update', this._bound);
+  }
+
+  _onPresenceUpdate(e) {
+    if (!this.recordId || !e.detail.editingRecords) {
+      return;
+    }
+    const record = e.detail.editingRecords[this.recordId];
+    const newUsers = record ? record.users : [];
+    const newCount = record ? record.count : 0;
+    // JSON.stringify guard: only update if data actually changed
+    if (JSON.stringify(newUsers) !== JSON.stringify(this._users)) {
+      this._users = newUsers;
+    }
+    if (newCount !== this.count) {
+      this.count = newCount;
+    }
   }
 
   createRenderRoot() {
     return this;
-  }
-
-  _resolveUsers() {
-    if (!this.recordId) {
-      return [];
-    }
-    const record = mockPresenceData.editingRecords[this.recordId];
-    return record ? record.users : [];
   }
 
   _cssIdent() {
@@ -79,6 +88,7 @@ class PresenceBadge extends LitElement {
     }
 
     const popoverId = `badge-popover-${this._cssIdent()}`;
+    const firstUser = this._users[0];
 
     return html`
       <div class="collaboration-badge-mini"
@@ -90,9 +100,9 @@ class PresenceBadge extends LitElement {
            @blur="${this._hidePopover}"
            style="anchor-name: --badge-${this._cssIdent()}">
         <div class="collaboration-badge-mini__icon">
-          ${this.avatarUrl
+          ${firstUser?.avatarUrl
             ? html`<img class="collaboration-badge-mini__avatar"
-                        src="${this.avatarUrl}"
+                        src="${firstUser.avatarUrl}"
                         alt="" />`
             : html`<typo3-backend-icon identifier="status-user-backend"
                                        size="small"></typo3-backend-icon>`

@@ -1,74 +1,74 @@
 <?php
 
+declare(strict_types=1);
+
 namespace TYPO3Incubator\Collaboration\Backend\Controller;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Backend\Attribute\AsController;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Http\JsonResponse;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3Incubator\Collaboration\Service\PresenceService;
 
-class AjaxController
+/**
+ * Focus/Blur endpoint consumed by `input.js`. Writes directly into
+ * `tx_collaboration_presence` so that the SSE loop re-emits the change
+ * within 500ms without touching `sys_collaboration_event`.
+ */
+#[AsController]
+final class AjaxController
 {
+    public function __construct(
+        private readonly PresenceService $presenceService,
+    ) {}
+
     public function focusAction(ServerRequestInterface $request): ResponseInterface
     {
         $data = json_decode($request->getBody()->getContents(), true) ?? [];
+        $userId = (int)($GLOBALS['BE_USER']->user['uid'] ?? 0);
+        // TYPO3 v14 has no PHP session — use the BE user session identifier (matches StreamController).
+        $sessionId = $GLOBALS['BE_USER']?->getSession()?->getIdentifier() ?? '';
 
-        // Sync ping from client — no DB write needed; stream re-emits state.
+        if ($userId === 0 || $sessionId === '') {
+            return new JsonResponse(['status' => 'unauth'], 401);
+        }
+
+        // Sync ping: stream re-emits state, nothing to do.
         if (!empty($data['sync'])) {
             return new JsonResponse(['status' => 'ok']);
         }
 
-        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getConnectionForTable('sys_collaboration_event');
-
-        $userId = $GLOBALS['BE_USER']->user['uid'];
-
-        // Blur: drop this user's active focus row.
+        // Blur: clear record/field, keep the user on the page.
         if (!empty($data['blur'])) {
-            $connection->delete('sys_collaboration_event', [
-                'user_id' => $userId,
-                'type' => 'focus',
-            ]);
+            $this->presenceService->clearFieldFocus($userId, $sessionId);
             return new JsonResponse(['status' => 'ok']);
         }
 
-        $payload = [
-            'table' => $data['table'],
-            'uid' => $data['uid'],
-            'field' => $data['field'],
-            'user_id' => $userId,
-        ];
+        $table = isset($data['table']) ? (string)$data['table'] : '';
+        $uid = isset($data['uid']) ? (int)$data['uid'] : 0;
+        $field = isset($data['field']) ? (string)$data['field'] : '';
 
-        if (empty($data['heartbeat'])) {
-            // New focus → ensure only one focus row per user.
-            $connection->delete('sys_collaboration_event', [
-                'user_id' => $userId,
-                'type' => 'focus',
-            ]);
-            $connection->insert('sys_collaboration_event', [
-                'timestamp' => time(),
-                'user_id' => $userId,
-                'page_id' => $payload['uid'],
-                'type' => 'focus',
-                'payload' => $payload,
-            ]);
-        } else {
-            $affected = $connection->update(
-                'sys_collaboration_event',
-                ['timestamp' => time()],
-                ['user_id' => $userId, 'type' => 'focus']
-            );
-            if ($affected === 0) {
-                $connection->insert('sys_collaboration_event', [
-                    'timestamp' => time(),
-                    'user_id' => $userId,
-                    'page_id' => $payload['uid'],
-                    'type' => 'focus',
-                    'payload' => $payload,
-                ]);
-            }
+        // Reject anything that isn't a known TCA table the user may modify — prevents
+        // probing arbitrary tables and writing presence rows the user has no right to.
+        if (
+            $table === ''
+            || !isset($GLOBALS['TCA'][$table])
+            || !$GLOBALS['BE_USER']->check('tables_modify', $table)
+        ) {
+            return new JsonResponse(['status' => 'forbidden'], 403);
         }
+
+        // Resolve the page the record lives on. `pages` records live on themselves.
+        $pageId = $table === 'pages'
+            ? $uid
+            : (int)(BackendUtility::getRecord($table, $uid, 'pid')['pid'] ?? 0);
+
+        if ($pageId === 0) {
+            return new JsonResponse(['status' => 'no-page'], 422);
+        }
+
+        $this->presenceService->setFieldFocus($userId, $sessionId, $pageId, $table, $uid, $field);
 
         return new JsonResponse(['status' => 'ok']);
     }

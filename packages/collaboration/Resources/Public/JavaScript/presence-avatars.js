@@ -1,9 +1,13 @@
 import { html, LitElement, nothing } from 'lit';
-import { mockPresenceData } from '@typo3/collaboration/mock-data.js';
+
+function formatEditingRecord(record) {
+  if (!record || !record.table || !record.uid) return null;
+  return record.table === 'tt_content' ? `CE ${record.uid}` : `${record.table}:${record.uid}`;
+}
 
 class PresenceAvatars extends LitElement {
   static properties = {
-    users: { type: Array },
+    users: { type: Array, state: true },
     currentUserUid: { type: Number, attribute: 'current-user-uid' },
   };
 
@@ -11,13 +15,28 @@ class PresenceAvatars extends LitElement {
     super();
     this.users = [];
     this.currentUserUid = 0;
+    this._bound = this._onPresenceUpdate.bind(this);
   }
 
   connectedCallback() {
     super.connectedCallback();
-    if (this.users.length === 0) {
-      this.users = mockPresenceData.pageUsers;
-      this.currentUserUid = mockPresenceData.currentUser.uid;
+    document.addEventListener('collaboration:presence-update', this._bound);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener('collaboration:presence-update', this._bound);
+  }
+
+  _onPresenceUpdate(e) {
+    const newUsers = e.detail.pageUsers || [];
+    const newUid = e.detail.currentUserUid || 0;
+    // JSON.stringify guard: only update if data actually changed (prevents popover DOM destruction)
+    if (JSON.stringify(newUsers) !== JSON.stringify(this.users)) {
+      this.users = newUsers;
+    }
+    if (newUid !== this.currentUserUid) {
+      this.currentUserUid = newUid;
     }
   }
 
@@ -41,7 +60,7 @@ class PresenceAvatars extends LitElement {
 
   _renderAvatar(user, index) {
     const isCurrentUser = user.uid === this.currentUserUid;
-    const initial = user.displayName.charAt(0).toUpperCase();
+    const initial = (user.displayName || '?').charAt(0).toUpperCase();
     const zIndex = this.users.length - index;
     const popoverId = `presence-popover-${user.uid}`;
     const anchorName = `--avatar-${user.uid}`;
@@ -69,7 +88,7 @@ class PresenceAvatars extends LitElement {
 
   _renderPopover(user, popoverId, anchorName) {
     const moduleLabel = this._getModuleLabel(user.module);
-    const elementLabel = user.editingElement || 'Browsing';
+    const elementLabel = formatEditingRecord(user.editingRecord) || 'Browsing';
     const sinceLabel = user.activeSince != null ? `seit ${user.activeSince} Min.` : '';
     const idleLabel = user.idle ? 'inaktiv' : 'aktiv';
     const idleClass = user.idle ? 'collaboration-popover__status--idle' : 'collaboration-popover__status--active';
