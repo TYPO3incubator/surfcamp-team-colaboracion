@@ -31,7 +31,8 @@ CREATE TABLE tx_collaboration_presence (
     PRIMARY KEY (uid),
     UNIQUE KEY userid_session (userid, session_id),
     KEY page_lookup (page_id, last_seen),
-    KEY record_lookup (record_table, record_uid, last_seen)
+    KEY record_lookup (record_table, record_uid, last_seen),
+    KEY last_seen_idx (last_seen)
 );
 
 # Extend table sys_note

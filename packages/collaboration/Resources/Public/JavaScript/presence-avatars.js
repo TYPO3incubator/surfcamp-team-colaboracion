@@ -5,6 +5,27 @@ function formatEditingRecord(record) {
   return record.table === 'tt_content' ? `CE ${record.uid}` : `${record.table}:${record.uid}`;
 }
 
+// Cheap structural diff covering the fields the avatar render depends on. Skips re-render
+// when the SSE payload re-emits the same state, which is the common case at 2 Hz.
+function avatarsEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (x.uid !== y.uid
+      || x.idle !== y.idle
+      || x.activeField !== y.activeField
+      || x.module !== y.module
+      || x.activeSince !== y.activeSince
+      || x.displayName !== y.displayName
+      || x.avatarUrl !== y.avatarUrl
+      || (x.editingRecord?.table ?? null) !== (y.editingRecord?.table ?? null)
+      || (x.editingRecord?.uid ?? null) !== (y.editingRecord?.uid ?? null)
+    ) return false;
+  }
+  return true;
+}
+
 class PresenceAvatars extends LitElement {
   static properties = {
     users: { type: Array, state: true },
@@ -31,8 +52,9 @@ class PresenceAvatars extends LitElement {
   _onPresenceUpdate(e) {
     const newUsers = e.detail.pageUsers || [];
     const newUid = e.detail.currentUserUid || 0;
-    // JSON.stringify guard: only update if data actually changed (prevents popover DOM destruction)
-    if (JSON.stringify(newUsers) !== JSON.stringify(this.users)) {
+    // Skip the assignment (and the Lit re-render that destroys popover DOM) when nothing
+    // visible has changed.
+    if (!avatarsEqual(newUsers, this.users)) {
       this.users = newUsers;
     }
     if (newUid !== this.currentUserUid) {

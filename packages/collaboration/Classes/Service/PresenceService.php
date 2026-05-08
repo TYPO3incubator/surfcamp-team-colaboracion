@@ -14,6 +14,11 @@ class PresenceService
     private const IDLE_THRESHOLD = 30;
     private const GONE_THRESHOLD = 120;
 
+    // Matches the 2 h read-window in BackendUtility::isRecordLocked(): rows older than this
+    // are already invisible in the core UI; we delete them so the table stops growing
+    // unboundedly when users close their browser without logging off.
+    private const SYS_LOCKED_TTL = 7200;
+
     /** @var array<int, array{displayName: string, avatarUrl: ?string}> */
     private array $userInfoCache = [];
 
@@ -246,12 +251,25 @@ class PresenceService
 
     public function expireStale(): void
     {
-        $cutoff = time() - self::GONE_THRESHOLD;
+        $now = time();
+        $cutoff = $now - self::GONE_THRESHOLD;
         $qb = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
         $qb
             ->delete(self::TABLE)
             ->where($qb->expr()->lt('last_seen', $qb->createNamedParameter($cutoff, Connection::PARAM_INT)))
             ->executeStatement();
+
+        // Piggy-back: prune rows in TYPO3 core's `sys_lockedrecords` that are older than
+        // its own 2 h read-window. Core never deletes those (only logout + opening a new
+        // edit form clears them), so they accumulate indefinitely. Cleaning them here
+        // keeps the legacy "currently being edited by …" warning honest for installations
+        // running our extension, without touching core code.
+        $this->connectionPool
+            ->getConnectionForTable('sys_lockedrecords')
+            ->executeStatement(
+                'DELETE FROM sys_lockedrecords WHERE tstamp < ?',
+                [$now - self::SYS_LOCKED_TTL]
+            );
     }
 
     public function deleteSession(int $userId, string $sessionId): void
@@ -269,8 +287,10 @@ class PresenceService
         }
 
         $qb = $this->connectionPool->getQueryBuilderForTable('be_users');
+        // Only the columns the avatar provider + display-name resolution actually use.
+        // `be_users` carries large blob columns (TSconfig, userMounts, …) we don't need.
         $row = $qb
-            ->select('*')
+            ->select('uid', 'realName', 'username')
             ->from('be_users')
             ->where($qb->expr()->eq('uid', $qb->createNamedParameter($userId, Connection::PARAM_INT)))
             ->executeQuery()
