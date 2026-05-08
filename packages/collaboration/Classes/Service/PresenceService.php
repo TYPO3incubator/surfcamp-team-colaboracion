@@ -18,6 +18,9 @@ class PresenceService
     // are already invisible in the core UI; we delete them so the table stops growing
     // unboundedly when users close their browser without logging off.
     private const SYS_LOCKED_TTL = 7200;
+    // Grace window for `sys_lockedrecords` orphan cleanup: a Save flow inserts a fresh lock
+    // and the SSE only reconnects ~1 s later, so we must not reap brand-new locks.
+    private const SYS_LOCKED_ORPHAN_GRACE = 30;
 
     /** @var array<int, array{displayName: string, avatarUrl: ?string}> */
     private array $userInfoCache = [];
@@ -259,25 +262,62 @@ class PresenceService
             ->where($qb->expr()->lt('last_seen', $qb->createNamedParameter($cutoff, Connection::PARAM_INT)))
             ->executeStatement();
 
-        // Piggy-back: prune rows in TYPO3 core's `sys_lockedrecords` that are older than
-        // its own 2 h read-window. Core never deletes those (only logout + opening a new
-        // edit form clears them), so they accumulate indefinitely. Cleaning them here
-        // keeps the legacy "currently being edited by …" warning honest for installations
-        // running our extension, without touching core code.
-        $this->connectionPool
-            ->getConnectionForTable('sys_lockedrecords')
-            ->executeStatement(
-                'DELETE FROM sys_lockedrecords WHERE tstamp < ?',
-                [$now - self::SYS_LOCKED_TTL]
-            );
+        // Two-stage prune of TYPO3 core's `sys_lockedrecords` (core never deletes; rows
+        // would otherwise accumulate and the legacy "being edited by …" warning would lie):
+        //
+        //   1. Hard TTL: rows older than core's own 2 h read-window are invisible anyway,
+        //      drop them so the table doesn't grow unboundedly.
+        //   2. Orphan cleanup: drop locks whose owner has no active presence row pointing
+        //      at the same record. The 30 s grace window keeps fresh save-induced locks
+        //      alive long enough for the SSE to reconnect on the new edit-form page.
+        $sysLockedConnection = $this->connectionPool->getConnectionForTable('sys_lockedrecords');
+        $sysLockedConnection->executeStatement(
+            'DELETE FROM sys_lockedrecords WHERE tstamp < ?',
+            [$now - self::SYS_LOCKED_TTL]
+        );
+        $sysLockedConnection->executeStatement(
+            'DELETE l FROM sys_lockedrecords l'
+            . ' WHERE l.tstamp < ?'
+            . ' AND NOT EXISTS ('
+            . '   SELECT 1 FROM ' . self::TABLE . ' p'
+            . '   WHERE p.userid = l.userid'
+            . '     AND p.record_table = l.record_table'
+            . '     AND p.record_uid = l.record_uid'
+            . ' )',
+            [$now - self::SYS_LOCKED_ORPHAN_GRACE]
+        );
     }
 
     public function deleteSession(int $userId, string $sessionId): void
     {
+        // Look up the record this session was editing before we drop the row, so we can
+        // also clear the matching `sys_lockedrecords` entry without waiting for the
+        // periodic orphan sweep in expireStale().
+        $qb = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
+        $row = $qb
+            ->select('record_table', 'record_uid')
+            ->from(self::TABLE)
+            ->where(
+                $qb->expr()->eq('userid', $qb->createNamedParameter($userId, Connection::PARAM_INT)),
+                $qb->expr()->eq('session_id', $qb->createNamedParameter($sessionId)),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
         $this->connectionPool->getConnectionForTable(self::TABLE)->delete(self::TABLE, [
             'userid' => $userId,
             'session_id' => $sessionId,
         ]);
+
+        if ($row && (string)$row['record_table'] !== '' && (int)$row['record_uid'] > 0) {
+            $this->connectionPool
+                ->getConnectionForTable('sys_lockedrecords')
+                ->delete('sys_lockedrecords', [
+                    'userid' => $userId,
+                    'record_table' => (string)$row['record_table'],
+                    'record_uid' => (int)$row['record_uid'],
+                ]);
+        }
     }
 
     private function resolveUserInfo(int $userId): ?array
