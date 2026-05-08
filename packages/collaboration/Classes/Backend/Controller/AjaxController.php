@@ -27,7 +27,6 @@ final class AjaxController
     {
         $data = json_decode($request->getBody()->getContents(), true) ?? [];
         $userId = (int)($GLOBALS['BE_USER']->user['uid'] ?? 0);
-        // TYPO3 v14 has no PHP session — use the BE user session identifier (matches StreamController).
         $sessionId = $GLOBALS['BE_USER']?->getSession()?->getIdentifier() ?? '';
 
         if ($userId === 0 || $sessionId === '') {
