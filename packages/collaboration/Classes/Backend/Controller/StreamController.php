@@ -71,6 +71,13 @@ final class StreamController
         $stream->open();
 
         $iteration = 0;
+        // Per-worker cursor: only deliver messages strictly newer than this. Start
+        // at the connect time so we don't replay history on reconnect. Advances as
+        // we deliver. See EventMessageService::getMessagesSince() for the why.
+        $lastEventTimestamp = time();
+        // Window during which we keep delivered messages around for other workers
+        // to read before pruning them.
+        $eventTtlSeconds = 60;
 
         // Extend MySQL wait_timeout so the endless loop outlives the default 8h threshold.
         try {
@@ -84,20 +91,25 @@ final class StreamController
                 $stream->sendMessage('ping', time());
 
                 // Event messages: lockedRecordEvent, clearCacheEvent
-                $eventMessages = $this->eventMessageService->getAllMessages();
-                if (!empty($eventMessages)) {
-                    foreach ($eventMessages as $eventMessage) {
-                        $eventData = json_decode($eventMessage['message'], true);
-                        if ($eventMessage['users_to_inform'] !== '') {
-                            $usersToInform = GeneralUtility::intExplode(',', $eventMessage['users_to_inform']);
-                            if (!in_array($currentUserUid, $usersToInform)) {
-                                continue;
-                            }
-                        }
-                        $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
+                $eventMessages = $this->eventMessageService->getMessagesSince($lastEventTimestamp);
+                foreach ($eventMessages as $eventMessage) {
+                    $messageTimestamp = (int)$eventMessage['timestamp'];
+                    if ($messageTimestamp > $lastEventTimestamp) {
+                        $lastEventTimestamp = $messageTimestamp;
                     }
-                    usleep(500000);
-                    $this->eventMessageService->cleanUp();
+                    if ($eventMessage['users_to_inform'] !== '') {
+                        $usersToInform = GeneralUtility::intExplode(',', $eventMessage['users_to_inform']);
+                        if (!in_array($currentUserUid, $usersToInform)) {
+                            continue;
+                        }
+                    }
+                    $eventData = json_decode($eventMessage['message'], true);
+                    $stream->sendEvent(new StreamEvent($eventMessage['name'], $eventData));
+                }
+                // Periodic TTL prune. Idempotent across workers — whichever worker
+                // hits the modulo first wins, the others no-op.
+                if ($iteration % 20 === 0) {
+                    $this->eventMessageService->pruneOlderThan(time() - $eventTtlSeconds);
                 }
 
                 // Presence updates - whenever pageId + module are provided.
