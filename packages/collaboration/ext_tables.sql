@@ -5,7 +5,7 @@ CREATE TABLE sys_event_messages (
     owner_name varchar(255) NOT NULL,
     users_to_inform varchar(255) NOT NULL,
     name varchar(255) NOT NULL,
-    message json NOT NULL,
+    message json NOT NULL
 );
 
 CREATE TABLE sys_collaboration_event (
@@ -17,7 +17,25 @@ CREATE TABLE sys_collaboration_event (
     payload JSON NOT NULL
 );
 
+CREATE TABLE tx_collaboration_presence (
+    uid int(11) unsigned NOT NULL auto_increment,
+    userid int(11) unsigned DEFAULT '0' NOT NULL,
+    session_id varchar(64) DEFAULT '' NOT NULL,
+    page_id int(11) unsigned DEFAULT '0' NOT NULL,
+    module varchar(64) DEFAULT '' NOT NULL,
+    record_table varchar(64) DEFAULT '' NOT NULL,
+    record_uid int(11) unsigned DEFAULT '0' NOT NULL,
+    field varchar(64) DEFAULT '' NOT NULL,
+    first_seen int(11) unsigned DEFAULT '0' NOT NULL,
+    last_seen int(11) unsigned DEFAULT '0' NOT NULL,
+    PRIMARY KEY (uid),
+    UNIQUE KEY userid_session (userid, session_id),
+    KEY page_lookup (page_id, last_seen),
+    KEY record_lookup (record_table, record_uid, last_seen),
+    KEY last_seen_idx (last_seen)
+);
+
 # Extend table sys_note
 CREATE TABLE sys_note (
-    assigned_name varchar(255) NOT NULL,
+    assigned_name varchar(255) NOT NULL
 );

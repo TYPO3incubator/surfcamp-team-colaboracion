@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TYPO3Incubator\Collaboration\Service;
 
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3Incubator\Collaboration\Domain\Model\Dto\EventMessageDto;
@@ -25,24 +26,40 @@ class EventMessageService
             ->executeStatement();
     }
 
-    // return an array with all active messages
-    public function getAllMessages(): array
+    // Messages strictly newer than the caller's cursor, oldest first. Each SSE
+    // worker advances its own cursor, so a worker never re-delivers a message
+    // to its own user — and never deletes a message another worker hasn't read.
+    public function getMessagesSince(int $sinceTimestamp): array
     {
-        // get all stored messages in db table
         $queryBuilder = $this->getQueryBuilder();
         return $queryBuilder
             ->select('*')
             ->from(self::MESSAGE_TABLE)
+            ->where(
+                $queryBuilder->expr()->gt(
+                    'timestamp',
+                    $queryBuilder->createNamedParameter($sinceTimestamp, Connection::PARAM_INT)
+                )
+            )
+            ->orderBy('timestamp', 'ASC')
             ->executeQuery()
             ->fetchAllAssociative();
     }
 
-    // truncate table
-    public function cleanUp(): void
+    // TTL-based prune. Replaces the old `DELETE FROM sys_event_messages` (no
+    // WHERE), which raced: one worker would wipe rows another worker had not
+    // yet read, dropping events on the floor.
+    public function pruneOlderThan(int $cutoffTimestamp): void
     {
         $queryBuilder = $this->getQueryBuilder();
         $queryBuilder
             ->delete(self::MESSAGE_TABLE)
+            ->where(
+                $queryBuilder->expr()->lt(
+                    'timestamp',
+                    $queryBuilder->createNamedParameter($cutoffTimestamp, Connection::PARAM_INT)
+                )
+            )
             ->executeStatement();
     }
 

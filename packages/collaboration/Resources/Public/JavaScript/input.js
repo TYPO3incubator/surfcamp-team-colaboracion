@@ -1,3 +1,9 @@
+/**
+ * Focus/blur tracker. Reports the current user's focused field to the
+ * backend via POST /typo3/ajax/collaboration/focus. Renders remote users'
+ * field focus by listening to CustomEvents from event.js — no own EventSource.
+ */
+
 let heartbeatInterval = null;
 let activeField = null;
 let lastField = null;
@@ -7,7 +13,6 @@ const knownShadowRoots = new Set();
 const iframeDocMap = new WeakMap();
 const remoteFocuses = new Map();
 const ckObservedEditables = new WeakSet();
-
 
 const WIDGET_WRAPPER_SELECTOR = [
     '.t3js-formengine-field-item',
@@ -22,34 +27,28 @@ const WIDGET_WRAPPER_SELECTOR = [
     'typo3-formengine-element-json',
 ].join(',');
 
-const source = new EventSource(TYPO3.settings.ajaxUrls.collaboration_example);
+// ---- Remote focus rendering (driven by CustomEvents from event.js) -------
 
-source.addEventListener('open', () => {
-    if (activeField) {
-        sendFocus(activeField, false);
-    }
-    requestPresenceSync();
+document.addEventListener('collaboration:field-focus-changed', (e) => {
+    if (!e.detail) return;
+    const data = {
+        table: e.detail.recordTable,
+        uid: e.detail.recordUid,
+        field: e.detail.field,
+    };
+    remoteFocuses.set(remoteKey(data), { data, ts: Date.now() });
+    applyHighlight(data, true);
 });
 
-source.addEventListener('stream_focus', (e) => {
-    try {
-        const data = JSON.parse(e.data).eventData;
-        const key = remoteKey(data);
-        remoteFocuses.set(key, { data, ts: Date.now() });
-        applyHighlight(data, true);
-    } catch {
-        return
-    }
-});
-
-source.addEventListener('stream_blur', (e) => {
-    try {
-        const data = JSON.parse(e.data).eventData;
-        remoteFocuses.delete(remoteKey(data));
-        applyHighlight(data, false);
-    } catch {
-        return
-    }
+document.addEventListener('collaboration:field-blur-changed', (e) => {
+    if (!e.detail) return;
+    const data = {
+        table: e.detail.recordTable,
+        uid: e.detail.recordUid,
+        field: e.detail.field,
+    };
+    remoteFocuses.delete(remoteKey(data));
+    applyHighlight(data, false);
 });
 
 function remoteKey(d) {
@@ -88,14 +87,7 @@ function reapplyAllHighlights() {
     }
 }
 
-function requestPresenceSync() {
-    fetch(TYPO3.settings.ajaxUrls.collaboration_focus, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sync: true }),
-        keepalive: true,
-    }).catch(() => {});
-}
+// ---- DOM attach (unchanged behaviour) ------------------------------------
 
 function attachDoc(doc) {
     if (!doc || knownDocs.has(doc)) return;
@@ -105,7 +97,6 @@ function attachDoc(doc) {
     deepWalk(doc);
     reapplyAllHighlights();
     if (activeField) sendFocus(activeField, false);
-    requestPresenceSync();
 }
 
 function attachShadowRoot(root) {
@@ -355,11 +346,12 @@ function parseInputName(name) {
     };
 }
 
+// Stale remote focus sweep: if event.js hasn't emitted a matching blur
+// within 3s, assume disconnect and drop the highlight.
 setInterval(() => {
     const now = Date.now();
-    for (const [key, { ts }] of remoteFocuses) {
-        if (now - ts > 1500) {
-            const { data } = remoteFocuses.get(key);
+    for (const [key, { ts, data }] of remoteFocuses) {
+        if (now - ts > 3000) {
             remoteFocuses.delete(key);
             applyHighlight(data, false);
         }
