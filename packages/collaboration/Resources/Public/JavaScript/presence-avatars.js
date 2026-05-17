@@ -131,6 +131,10 @@ class PresenceAvatars extends LitElement {
           <div class="collaboration-popover__info">
             <div class="collaboration-popover__name">${user.displayName}</div>
             <div class="collaboration-popover__detail">${moduleLabel} · ${elementLabel}</div>
+            ${user.activeField
+              ? html`<div class="collaboration-popover__field">Feld: ${user.activeField}</div>`
+              : nothing
+            }
           </div>
         </div>
         <div class="collaboration-popover__footer">

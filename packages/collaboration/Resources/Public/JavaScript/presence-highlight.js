@@ -40,8 +40,10 @@ applyEditingHighlights();
 // --- Mode 2: Dynamic badge injection from SSE ---
 
 function buildBadgeElement(table, uid) {
+  // count is driven by SSE updates via Lit property; no attribute initialization
+  // needed (and setting count="0" would otherwise stay stale because Lit doesn't
+  // sync the property back to the attribute).
   const badge = document.createElement('typo3-collaboration-badge');
-  badge.setAttribute('count', '0');
   badge.setAttribute('record-id', `${table}:${uid}`);
   return badge;
 }

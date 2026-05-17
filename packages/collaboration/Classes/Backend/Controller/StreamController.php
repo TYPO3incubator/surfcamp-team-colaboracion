@@ -47,8 +47,6 @@ final class StreamController
         // Release PHP session lock so the long-running SSE doesn't block other requests.
         session_write_close();
 
-        // TYPO3 v14 manages BE auth via its own UserSession (not PHP sessions),
-        // so session_id() is empty. Use the BE user session identifier instead.
         $sessionId = $GLOBALS['BE_USER']?->getSession()?->getIdentifier() ?? '';
 
         set_time_limit(0);
@@ -58,18 +56,13 @@ final class StreamController
 
         $currentUserUid = (int)$GLOBALS['BE_USER']->user['uid'];
 
-        // Shutdown safety net: if PHP terminates for any reason (timeout, fatal,
-        // FPM kill) we make a best-effort attempt to remove the row. The DB connection
-        // may be in a torn-down or half-broken state during shutdown, so this can
-        // legitimately fail — `expireStale()` (every 10 SSE iterations across all
-        // active streams) is the authoritative backstop.
+        // Shutdown safety net: if PHP terminates for any reason we attempt to remove the row.
         $presenceService = $this->presenceService;
         register_shutdown_function(static function () use ($presenceService, $currentUserUid, $sessionId): void {
             if ($currentUserUid > 0 && $sessionId !== '') {
                 try {
                     $presenceService->deleteSession($currentUserUid, $sessionId);
                 } catch (\Throwable) {
-                    // Best-effort; expireStale() will reap the row within GONE_THRESHOLD seconds.
                 }
             }
         });
@@ -84,9 +77,7 @@ final class StreamController
             $this->connectionPool
                 ->getConnectionForTable('tx_collaboration_presence')
                 ->executeStatement('SET SESSION wait_timeout = 28800');
-        } catch (\Exception $e) {
-            // Non-critical — default timeout will apply.
-        }
+        } catch (\Exception $e) {}
 
         while (true) {
             try {
@@ -109,7 +100,7 @@ final class StreamController
                     $this->eventMessageService->cleanUp();
                 }
 
-                // Presence updates — whenever pageId + module are provided.
+                // Presence updates - whenever pageId + module are provided.
                 if ($pageId !== null && $module !== null && $currentUserUid > 0 && $sessionId !== '') {
                     $this->presenceService->heartbeat(
                         $currentUserUid,

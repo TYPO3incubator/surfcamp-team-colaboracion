@@ -94,6 +94,17 @@ source.addEventListener('clearCacheEvent', (e) => {
 // events when the SSE payload changes.
 const previousFieldFocus = new Map(); // userId -> { recordTable, recordUid, field }
 
+// input.js (highlight renderer) lives in the top document, but event.js runs
+// inside the module iframe. CustomEvents don't cross document boundaries, so
+// route field events to the top document.
+function fieldEventTarget() {
+  try {
+    return (window.top && window.top.document) || document;
+  } catch (e) {
+    return document;
+  }
+}
+
 function deriveFieldEvents(pageUsers) {
   const current = new Map();
   for (const user of pageUsers || []) {
@@ -115,7 +126,7 @@ function deriveFieldEvents(pageUsers) {
       || now.recordUid !== prev.recordUid
       || now.field !== prev.field;
     if (changed) {
-      document.dispatchEvent(new CustomEvent('collaboration:field-blur-changed', {
+      fieldEventTarget().dispatchEvent(new CustomEvent('collaboration:field-blur-changed', {
         detail: {
           userId,
           recordTable: prev.recordTable,
@@ -126,24 +137,20 @@ function deriveFieldEvents(pageUsers) {
     }
   }
 
-  // Focuses: newly focused or moved to different field/record
+  // Focuses: emit every tick for any user currently focused. The listener
+  // dedupes via a Map keyed by table/uid/field, so re-emitting refreshes its
+  // timestamp and keeps the stale sweep from dropping the highlight while
+  // the focus is unchanged.
   for (const [userId, now] of current) {
-    const prev = previousFieldFocus.get(userId);
-    const changed = !prev
-      || prev.recordTable !== now.recordTable
-      || prev.recordUid !== now.recordUid
-      || prev.field !== now.field;
-    if (changed) {
-      document.dispatchEvent(new CustomEvent('collaboration:field-focus-changed', {
-        detail: {
-          userId,
-          recordTable: now.recordTable,
-          recordUid: now.recordUid,
-          field: now.field,
-          displayName: now.displayName,
-        },
-      }));
-    }
+    fieldEventTarget().dispatchEvent(new CustomEvent('collaboration:field-focus-changed', {
+      detail: {
+        userId,
+        recordTable: now.recordTable,
+        recordUid: now.recordUid,
+        field: now.field,
+        displayName: now.displayName,
+      },
+    }));
   }
 
   previousFieldFocus.clear();
